@@ -1,7 +1,7 @@
 'use client';
 
 import { API_BASE } from './config';
-import { cartId, tokens } from './session';
+import { cartId, csrf } from './session';
 
 /** Thrown on non-2xx responses; carries the HTTP status + server message. */
 export class ApiError extends Error {
@@ -16,22 +16,38 @@ export class ApiError extends Error {
 
 type Options = RequestInit & { auth?: boolean };
 
+const SAFE_METHODS = new Set(['GET', 'HEAD']);
+
 function buildHeaders(opts: Options): Headers {
   const headers = new Headers(opts.headers);
   const isForm = opts.body instanceof FormData;
   if (opts.body && !isForm && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
-  if (opts.auth !== false && tokens.access) {
-    headers.set('Authorization', `Bearer ${tokens.access}`);
+
+  // Cookie-mode auth: tell both services to read the token from the HttpOnly
+  // cookie (sent automatically because every request uses credentials).
+  headers.set('X-Auth-Source', 'cookie');
+
+  // CSRF double-submit: echo the readable csrf cookie on state-changing calls.
+  const method = (opts.method ?? 'GET').toUpperCase();
+  if (!SAFE_METHODS.has(method)) {
+    const token = csrf.token;
+    if (token) headers.set('X-CSRF-Token', token);
   }
+
   const cid = cartId.get();
   if (cid) headers.set('X-Cart-Id', cid);
   return headers;
 }
 
 async function raw(path: string, opts: Options = {}): Promise<Response> {
-  return fetch(`${API_BASE}${path}`, { ...opts, headers: buildHeaders(opts) });
+  return fetch(`${API_BASE}${path}`, {
+    ...opts,
+    // Always send/receive the auth + csrf cookies (cross-origin to the gateway).
+    credentials: 'include',
+    headers: buildHeaders(opts),
+  });
 }
 
 async function unwrap<T>(res: Response): Promise<T> {
@@ -43,17 +59,14 @@ async function unwrap<T>(res: Response): Promise<T> {
   return (json.data ?? json) as T;
 }
 
+/**
+ * Refresh the session cookies. The refresh token rides in its HttpOnly cookie,
+ * so there's no body — the server rotates the cookies and we just report
+ * whether it worked.
+ */
 async function tryRefresh(): Promise<boolean> {
-  if (!tokens.refresh) return false;
-  const res = await raw('/auth/refresh', {
-    method: 'POST',
-    auth: false,
-    body: JSON.stringify({ refreshToken: tokens.refresh }),
-  });
-  if (!res.ok) return false;
-  const data = (await res.json()).data;
-  tokens.set(data.accessToken, data.refreshToken);
-  return true;
+  const res = await raw('/auth/refresh', { method: 'POST', auth: false });
+  return res.ok;
 }
 
 /** Core request: unwraps the {success,data} envelope, refreshes once on 401. */
@@ -78,13 +91,15 @@ export const api = {
     apiFetch<T>(p, { method: 'POST', body: form }),
 };
 
-/** Fetch a protected image with the bearer token → object URL (img can't send headers). */
+/** Fetch a protected image (auth cookie sent automatically) → object URL. */
 export async function fetchImageUrl(path: string): Promise<string> {
   const res = await raw(path);
   if (!res.ok) throw new ApiError(res.status, 'image failed');
   return URL.createObjectURL(await res.blob());
 }
 
-/** SSE URL with the token in the query (EventSource can't set headers). */
-export const sseUrl = (path: string) =>
-  `${API_BASE}${path}?access_token=${encodeURIComponent(tokens.access ?? '')}`;
+/**
+ * SSE URL. EventSource can't set headers, but with `{ withCredentials: true }`
+ * it sends the auth cookie, which the API accepts — so no token in the query.
+ */
+export const sseUrl = (path: string) => `${API_BASE}${path}`;

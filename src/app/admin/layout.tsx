@@ -9,8 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { useMe } from '@/features/auth/api';
-import { useAuthModal } from '@/features/auth/auth-modal.store';
+import { useAuthModal, useMe } from '@/features/auth';
 import { sseUrl } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +40,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   // Live updates: refresh orders/returns as they change server-side (SSE).
   useEffect(() => {
     if (!isAdmin) return;
-    const es = new EventSource(sseUrl('/api/admin/events'));
+    const es = new EventSource(sseUrl('/api/admin/events'), {
+      withCredentials: true,
+    });
     es.onopen = () => setLive(true);
     es.onerror = () => setLive(false);
     es.onmessage = (e) => {

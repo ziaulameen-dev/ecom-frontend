@@ -11,8 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { useLogout, useMe } from '@/features/auth/api';
-import { useAuthModal } from '@/features/auth/auth-modal.store';
+import { useAuthModal, useLogout, useMe } from '@/features/auth';
 import {
   useAddresses,
   useCancelOrder,

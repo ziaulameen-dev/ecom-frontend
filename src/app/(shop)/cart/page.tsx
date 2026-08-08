@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMe } from '@/features/auth/api';
-import { useAuthModal } from '@/features/auth/auth-modal.store';
+import { useAuthModal, useMe } from '@/features/auth';
 import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/features/cart/api';
 import { money } from '@/lib/utils';
 

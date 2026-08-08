@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api-client';
-import { authKeys } from '@/features/auth/api';
+import { authKeys } from '@/features/auth';
 import type { AdminReturn, Address, Order, OrderItem, User } from '@/lib/types';
 
 export const accountKeys = {

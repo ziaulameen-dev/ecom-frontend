@@ -8,8 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/features/cart/api';
-import { useMe } from '@/features/auth/api';
-import { useAuthModal } from '@/features/auth/auth-modal.store';
+import { useAuthModal, useMe } from '@/features/auth';
 import { STORE_NAME } from '@/lib/config';
 import { cn } from '@/lib/utils';
 

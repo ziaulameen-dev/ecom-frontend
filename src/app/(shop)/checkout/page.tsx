@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { useMe } from '@/features/auth/api';
-import { useAuthModal } from '@/features/auth/auth-modal.store';
+import { useAuthModal, useMe } from '@/features/auth';
 import { useCart } from '@/features/cart/api';
 import {
   useAddresses,
