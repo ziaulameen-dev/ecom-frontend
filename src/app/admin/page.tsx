@@ -3,7 +3,7 @@
 import { IndianRupee, PackageSearch, ShoppingCart, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAdminOrders, useAdminProducts, useAdminReturns } from '@/features/admin/api';
+import { useAdminOrders, useAdminProducts, useAdminReturns } from '@/features/admin';
 import { money } from '@/lib/utils';
 
 export default function AdminDashboard() {

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { RatingStars } from '@/components/rating-stars';
 import { Button } from '@/components/ui/button';
-import { useAddToCart } from '@/features/cart/api';
+import { useAddToCart } from '@/features/cart';
 import type { ListingItem } from '@/lib/types';
 import { money } from '@/lib/utils';
 

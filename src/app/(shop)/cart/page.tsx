@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthModal, useMe } from '@/features/auth';
-import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/features/cart/api';
+import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/features/cart';
 import { money } from '@/lib/utils';
 
 export default function CartPage() {

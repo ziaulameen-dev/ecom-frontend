@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { useCategoryTree, useProducts } from '@/features/catalog/api';
+import { useCategoryTree, useProducts } from '@/features/catalog';
 import { ProductGrid } from '@/features/catalog/components/product-grid';
 import type { CategoryNode } from '@/lib/types';
 import { cn } from '@/lib/utils';

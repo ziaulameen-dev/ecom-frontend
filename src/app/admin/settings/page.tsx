@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useSetShippingRate, useShippingRate } from '@/features/admin/api';
+import { useSetShippingRate, useShippingRate } from '@/features/admin';
 import { money } from '@/lib/utils';
 
 export default function AdminSettingsPage() {

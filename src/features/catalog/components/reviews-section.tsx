@@ -2,7 +2,7 @@
 
 import { RatingStars } from '@/components/rating-stars';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useReviews } from '@/features/catalog/api';
+import { useReviews } from '../hooks/use-reviews';
 import { formatDate } from '@/lib/utils';
 
 export function ReviewsSection({ productId }: { productId: string }) {

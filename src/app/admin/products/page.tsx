@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import {
   useAddVariant, useAdminAttributes, useAdminCategories, useAdminProducts,
   useCreateProduct, useDeleteProduct, useDeleteVariant, useUpdateProduct,
-} from '@/features/admin/api';
+} from '@/features/admin';
 import type { AdminProduct, AttributeType } from '@/lib/types';
 import { money } from '@/lib/utils';
 

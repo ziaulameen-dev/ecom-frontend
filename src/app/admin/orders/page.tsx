@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   useAdminCancelOrder, useAdminOrders, useRefundOrder, useSetTracking, useUpdateOrderStatus,
-} from '@/features/admin/api';
+} from '@/features/admin';
 import type { OrderStatus } from '@/lib/types';
 import { cn, money } from '@/lib/utils';
 

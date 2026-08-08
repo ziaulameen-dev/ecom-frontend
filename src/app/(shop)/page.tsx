@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCategoryTree, useProducts } from '@/features/catalog/api';
+import { useCategoryTree, useProducts } from '@/features/catalog';
 import { ProductCard } from '@/features/catalog/components/product-card';
 
 const TRUST = [

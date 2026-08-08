@@ -10,14 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useAuthModal, useMe } from '@/features/auth';
-import { useCart } from '@/features/cart/api';
+import { useCart } from '@/features/cart';
 import {
   useAddresses,
   useCreateAddress,
   type AddressInput,
-} from '@/features/account/api';
+} from '@/features/account';
 import { AddressForm } from '@/features/account/components/address-form';
-import { useCheckout, useValidateCoupon } from '@/features/checkout/api';
+import { useCheckout, useValidateCoupon } from '@/features/checkout';
 import { api } from '@/lib/api-client';
 import { cn, money } from '@/lib/utils';
 

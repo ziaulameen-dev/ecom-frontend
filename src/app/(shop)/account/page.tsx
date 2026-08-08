@@ -21,7 +21,7 @@ import {
   useMyReturns,
   useUpdateProfile,
   type AddressInput,
-} from '@/features/account/api';
+} from '@/features/account';
 import { AddressForm } from '@/features/account/components/address-form';
 import { ReturnForm } from '@/features/account/components/return-form';
 import type { AdminReturn, OrderStatus } from '@/lib/types';

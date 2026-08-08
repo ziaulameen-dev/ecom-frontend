@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   useAdminProducts, useAdminReviews, useCreateReview, useDeleteReview,
-} from '@/features/admin/api';
+} from '@/features/admin';
 
 export default function AdminReviewsPage() {
   const { data: products } = useAdminProducts();

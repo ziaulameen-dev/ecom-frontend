@@ -5,7 +5,7 @@ import { AuthImage } from '@/components/auth-image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useAdminReturns, useReturnAction } from '@/features/admin/api';
+import { useAdminReturns, useReturnAction } from '@/features/admin';
 
 const badge: Record<string, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
   requested: 'secondary', approved: 'default', received: 'default', refunded: 'success', rejected: 'destructive',

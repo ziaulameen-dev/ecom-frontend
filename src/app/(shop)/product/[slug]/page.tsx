@@ -7,13 +7,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProduct } from '@/features/catalog/api';
+import { useProduct } from '@/features/catalog';
 import { ReviewsSection } from '@/features/catalog/components/reviews-section';
 import {
   VariantPicker,
   useVariantSelection,
 } from '@/features/catalog/components/variant-picker';
-import { useAddToCart } from '@/features/cart/api';
+import { useAddToCart } from '@/features/cart';
 import { money } from '@/lib/utils';
 
 export default function ProductPage() {

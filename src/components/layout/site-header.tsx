@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useCart } from '@/features/cart/api';
+import { useCart } from '@/features/cart';
 import { useAuthModal, useMe } from '@/features/auth';
 import { STORE_NAME } from '@/lib/config';
 import { cn } from '@/lib/utils';

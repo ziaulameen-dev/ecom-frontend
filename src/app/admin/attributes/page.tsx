@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import {
   useAddAttributeValue, useAdminAttributes, useCreateAttributeType,
   useDeleteAttributeType, useDeleteAttributeValue,
-} from '@/features/admin/api';
+} from '@/features/admin';
 
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
