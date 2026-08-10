@@ -37,6 +37,12 @@ export default function CartPage() {
     );
   }
 
+  // Total off the regular price across on-offer lines.
+  const savingsMinor = cart.items.reduce(
+    (sum, it) => sum + (it.compareAtMinor ? (it.compareAtMinor - it.unitAmountMinor) * it.quantity : 0),
+    0,
+  );
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
       <h1 className="text-2xl font-semibold">Your cart</h1>
@@ -51,7 +57,16 @@ export default function CartPage() {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{it.name}</div>
                   {it.label && <div className="text-xs text-muted-foreground">{it.label}</div>}
-                  <div className="mt-1 text-sm text-muted-foreground">{money(it.unitAmountMinor, cart.currency)}</div>
+                  <div className="mt-1 flex items-center gap-1.5 text-sm">
+                    <span className={it.compareAtMinor ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                      {money(it.unitAmountMinor, cart.currency)}
+                    </span>
+                    {it.compareAtMinor && (
+                      <span className="text-xs text-muted-foreground line-through">
+                        {money(it.compareAtMinor, cart.currency)}
+                      </span>
+                    )}
+                  </div>
                   {!it.available && <div className="text-xs text-destructive">Unavailable</div>}
                 </div>
                 <div className="flex items-center rounded-md border">
@@ -59,7 +74,14 @@ export default function CartPage() {
                   <span className="w-8 text-center text-sm tabular-nums">{it.quantity}</span>
                   <Button variant="ghost" size="icon" className="size-8" disabled={it.quantity >= it.stock} onClick={() => update.mutate({ itemId: it.id, quantity: it.quantity + 1 })}><Plus /></Button>
                 </div>
-                <div className="w-20 text-right font-medium">{money(it.lineTotalMinor, cart.currency)}</div>
+                <div className="w-20 text-right">
+                  <div className="font-medium">{money(it.lineTotalMinor, cart.currency)}</div>
+                  {it.compareAtMinor && (
+                    <div className="text-xs text-muted-foreground line-through">
+                      {money(it.compareAtMinor * it.quantity, cart.currency)}
+                    </div>
+                  )}
+                </div>
                 <Button variant="ghost" size="icon" onClick={() => remove.mutate(it.id)}><Trash2 /></Button>
               </CardContent>
             </Card>
@@ -72,6 +94,12 @@ export default function CartPage() {
               <span className="text-muted-foreground">Subtotal</span>
               <span className="font-medium">{money(cart.subtotalMinor, cart.currency)}</span>
             </div>
+            {savingsMinor > 0 && (
+              <div className="flex justify-between text-sm text-brand">
+                <span>You save</span>
+                <span className="font-medium">−{money(savingsMinor, cart.currency)}</span>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">Shipping, tax & discounts calculated at checkout.</p>
             <Separator />
             {me ? (

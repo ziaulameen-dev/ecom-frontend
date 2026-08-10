@@ -175,6 +175,7 @@ export interface CartLine {
   imageUrl: string | null;
   quantity: number;
   unitAmountMinor: number;
+  compareAtMinor: number | null;
   lineTotalMinor: number;
   available: boolean;
   stock: number;
