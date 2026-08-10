@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +12,8 @@ import { ProductGrid } from '@/features/catalog/components/product-grid';
 import type { CategoryNode } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-type Sort = 'featured' | 'price-asc' | 'price-desc';
+type Sort = 'featured' | 'new' | 'best' | 'price-asc' | 'price-desc';
+const SORTS: Sort[] = ['featured', 'new', 'best', 'price-asc', 'price-desc'];
 
 function resolveCategory(tree: CategoryNode[] | undefined, slug: string | null) {
   if (!tree || !slug) return { id: undefined as string | undefined, name: 'All products' };
@@ -37,7 +38,13 @@ function ShopInner() {
 
   const { data: products, isLoading } = useProducts({ categoryId, search, limit: 60 });
 
-  const [sort, setSort] = useState<Sort>('featured');
+  // Seed the sort from the URL (?sort=new/best from the header) and keep it in sync.
+  const sortParam = sp.get('sort');
+  const urlSort = (SORTS as string[]).includes(sortParam ?? '') ? (sortParam as Sort) : null;
+  const [sort, setSort] = useState<Sort>(urlSort ?? 'featured');
+  useEffect(() => {
+    if (urlSort) setSort(urlSort);
+  }, [urlSort]);
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
@@ -48,6 +55,8 @@ function ShopInner() {
     list = list.filter((p) => p.priceMinor >= min && p.priceMinor <= max);
     if (sort === 'price-asc') list.sort((a, b) => a.priceMinor - b.priceMinor);
     if (sort === 'price-desc') list.sort((a, b) => b.priceMinor - a.priceMinor);
+    if (sort === 'new') list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (sort === 'best') list.sort((a, b) => b.soldCount - a.soldCount);
     return list;
   }, [products, sort, minPrice, maxPrice]);
 
@@ -125,6 +134,8 @@ function ShopInner() {
                 className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
               >
                 <option value="featured">Featured</option>
+                <option value="new">New arrivals</option>
+                <option value="best">Best selling</option>
                 <option value="price-asc">Price: low to high</option>
                 <option value="price-desc">Price: high to low</option>
               </select>

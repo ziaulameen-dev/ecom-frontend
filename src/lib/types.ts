@@ -8,8 +8,50 @@ export interface Category {
   imageUrl: string | null;
   sortOrder: number;
 }
+
+/** One item in a product's ordered common media gallery. */
+export interface MediaItem {
+  url: string;
+  type: 'image' | 'video';
+}
 export interface CategoryNode extends Category {
   children: Category[];
+}
+
+/** A homepage hero banner (admin-configured image + click-through link). */
+export interface HeroBanner {
+  id: string;
+  imageUrl: string | null;
+  linkUrl: string;
+}
+
+/** Hero config: the banners plus the store-wide aspect ratio they render at. */
+export interface HeroConfig {
+  banners: HeroBanner[];
+  aspectWidth: number;
+  aspectHeight: number;
+}
+
+/** Storefront announcement bar (admin-configured scrolling messages). */
+export interface Announcement {
+  messages: string[];
+  active: boolean;
+}
+
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface SocialLink {
+  label: string;
+  url: string;
+}
+
+/** Store-wide editable content: FAQ + footer social links. */
+export interface SiteContent {
+  faqs: FaqItem[];
+  socials: SocialLink[];
 }
 
 export interface AttributeValue {
@@ -42,10 +84,13 @@ export interface ListingItem {
   imageUrl: string | null;
   categoryId: string | null;
   priceMinor: number;
+  offerPriceMinor: number | null;
   currency: string;
   inStock: boolean;
   ratingAvg: number;
   ratingCount: number;
+  createdAt: string;
+  soldCount: number;
 }
 
 export interface VariantOption {
@@ -59,6 +104,7 @@ export interface Variant {
   id: string;
   sku: string | null;
   priceMinor: number;
+  offerPriceMinor: number | null;
   stock: number;
   images: string[];
   listedSeparately: boolean;
@@ -76,9 +122,11 @@ export interface ProductDetail {
   active: boolean;
   currency: string;
   basePriceMinor: number;
+  offerPriceMinor: number | null;
   baseStock: number;
   priceFromMinor: number;
   hasVariants: boolean;
+  media: MediaItem[];
   variants: Variant[];
 }
 
@@ -156,6 +204,7 @@ export interface AdminVariant {
   productId: string;
   sku: string | null;
   priceMinor: number;
+  offerPriceMinor: number | null;
   stock: number;
   valueIds: string[];
   images: string[];
@@ -174,6 +223,8 @@ export interface AdminProduct {
   active: boolean;
   stock: number;
   priceMinor: number;
+  offerPriceMinor: number | null;
+  media: MediaItem[];
   variants: AdminVariant[];
   createdAt: string;
 }
@@ -203,12 +254,26 @@ export interface AdminReturn {
   createdAt: string;
 }
 
+/** Snapshot of the shipping address captured at order time. */
+export interface ShippingAddress {
+  fullName: string;
+  phone: string | null;
+  line1: string;
+  line2: string | null;
+  city: string;
+  state: string | null;
+  postalCode: string | null;
+  country: string;
+}
+
 export interface AdminOrder extends Order {
   customerEmail: string | null;
   carrier: string | null;
   trackingNumber: string | null;
   refundedMinor: number;
   cancelReason: string | null;
+  paymentRef: string | null;
+  shippingAddress: ShippingAddress;
 }
 
 export interface Order {

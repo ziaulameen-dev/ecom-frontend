@@ -16,7 +16,14 @@ function useInvalidate(key: readonly unknown[]) {
 }
 
 export const useAdminOrders = () =>
-  useQuery({ queryKey: adminKeys.orders, queryFn: fetchAdminOrders });
+  useQuery({
+    queryKey: adminKeys.orders,
+    queryFn: fetchAdminOrders,
+    // Keep the admin view fresh for new/updated orders even if the SSE live
+    // channel drops: refetch on focus and poll every 20s while the tab is open.
+    refetchOnWindowFocus: true,
+    refetchInterval: 20_000,
+  });
 
 export function useUpdateOrderStatus() {
   const inv = useInvalidate(adminKeys.orders);

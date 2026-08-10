@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Toaster } from '@/components/ui/sonner';
 import { LoginModal } from '@/features/auth';
 
@@ -24,6 +25,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={client}>
       {children}
       <LoginModal />
+      <ConfirmDialog />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );

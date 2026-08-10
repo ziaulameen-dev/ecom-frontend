@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthModal, useMe } from '@/features/auth';
 import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/features/cart';
-import { money } from '@/lib/utils';
+import { mediaSrc, money } from '@/lib/utils';
 
 export default function CartPage() {
   const { data: cart, isLoading } = useCart();
@@ -46,7 +46,7 @@ export default function CartPage() {
             <Card key={it.id}>
               <CardContent className="flex items-center gap-4 p-4">
                 <div className="relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
-                  {it.imageUrl && <Image src={it.imageUrl} alt={it.name} fill className="object-cover" sizes="80px" />}
+                  {it.imageUrl && <Image src={mediaSrc(it.imageUrl)} alt={it.name} fill className="object-cover" sizes="80px" />}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{it.name}</div>

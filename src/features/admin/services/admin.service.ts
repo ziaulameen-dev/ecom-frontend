@@ -38,6 +38,14 @@ export function updateVariant(input: { id: string; body: Record<string, unknown>
 export function deleteVariant(id: string) {
   return api.del(`/api/products/variants/${id}`);
 }
+export function uploadProductImage(file: File) {
+  const form = new FormData();
+  form.append('image', file);
+  return api.postForm<{ url: string; key: string; type: 'image' | 'video' }>(
+    '/api/products/admin/image',
+    form,
+  );
+}
 
 /* ---- Categories ---------------------------------------------------------- */
 export function fetchAdminCategories() {
@@ -45,6 +53,9 @@ export function fetchAdminCategories() {
 }
 export function createCategory(body: Record<string, unknown>) {
   return api.post('/api/categories', body);
+}
+export function updateCategory(input: { id: string; body: Record<string, unknown> }) {
+  return api.patch(`/api/categories/${input.id}`, input.body);
 }
 export function deleteCategory(id: string) {
   return api.del(`/api/categories/${id}`);
@@ -56,6 +67,9 @@ export function fetchAdminAttributes() {
 }
 export function createAttributeType(body: Record<string, unknown>) {
   return api.post('/api/attributes', body);
+}
+export function updateAttributeType(input: { id: string; body: Record<string, unknown> }) {
+  return api.patch(`/api/attributes/${input.id}`, input.body);
 }
 export function addAttributeValue(input: { typeId: string; body: Record<string, unknown> }) {
   return api.post(`/api/attributes/${input.typeId}/values`, input.body);
@@ -96,7 +110,7 @@ export function fetchAdminReturns() {
 }
 export function returnAction(input: {
   id: string;
-  action: 'approve' | 'reject' | 'receive' | 'refund';
+  action: 'approve' | 'reject' | 'receive' | 'refund' | 'refund_no_restock';
 }) {
   return api.patch(`/api/admin/returns/${input.id}`, { action: input.action });
 }

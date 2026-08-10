@@ -8,6 +8,7 @@ import {
   deleteAttributeType,
   deleteAttributeValue,
   fetchAdminAttributes,
+  updateAttributeType,
 } from '../services/admin.service';
 
 function useInvalidate(key: readonly unknown[]) {
@@ -21,6 +22,10 @@ export const useAdminAttributes = () =>
 export function useCreateAttributeType() {
   const inv = useInvalidate(adminKeys.attributes);
   return useMutation({ mutationFn: createAttributeType, onSuccess: inv });
+}
+export function useUpdateAttributeType() {
+  const inv = useInvalidate(adminKeys.attributes);
+  return useMutation({ mutationFn: updateAttributeType, onSuccess: inv });
 }
 export function useAddAttributeValue() {
   const inv = useInvalidate(adminKeys.attributes);

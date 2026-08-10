@@ -8,7 +8,18 @@ import { cn } from '@/lib/utils';
  * Renders a protected image (e.g. return evidence in MinIO) by fetching it with
  * the bearer token → object URL — a plain <img src> can't send an auth header.
  */
-export function AuthImage({ path, alt, className }: { path: string; alt?: string; className?: string }) {
+export function AuthImage({
+  path,
+  alt,
+  className,
+  zoomable,
+}: {
+  path: string;
+  alt?: string;
+  className?: string;
+  /** Open the full image in a new tab when clicked. */
+  zoomable?: boolean;
+}) {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -26,6 +37,15 @@ export function AuthImage({ path, alt, className }: { path: string; alt?: string
 
   if (failed) return <div className={cn('grid place-items-center bg-muted text-xs text-muted-foreground', className)}>×</div>;
   if (!src) return <div className={cn('animate-pulse bg-muted', className)} />;
+  // The blob URL is already authenticated, so it opens directly in a new tab
+  // (the raw API URL would 401 without the bearer header).
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt ?? ''} className={className} />;
+  return (
+    <img
+      src={src}
+      alt={alt ?? ''}
+      className={cn(className, zoomable && 'cursor-zoom-in')}
+      onClick={zoomable ? () => window.open(src, '_blank', 'noopener') : undefined}
+    />
+  );
 }

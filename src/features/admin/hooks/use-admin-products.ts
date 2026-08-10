@@ -10,6 +10,7 @@ import {
   fetchAdminProducts,
   updateProduct,
   updateVariant,
+  uploadProductImage,
 } from '../services/admin.service';
 
 function useInvalidate(key: readonly unknown[]) {
@@ -43,4 +44,7 @@ export function useUpdateVariant() {
 export function useDeleteVariant() {
   const inv = useInvalidate(adminKeys.products);
   return useMutation({ mutationFn: deleteVariant, onSuccess: inv });
+}
+export function useUploadProductImage() {
+  return useMutation({ mutationFn: uploadProductImage });
 }

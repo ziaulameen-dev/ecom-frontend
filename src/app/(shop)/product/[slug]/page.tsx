@@ -14,7 +14,7 @@ import {
   useVariantSelection,
 } from '@/features/catalog/components/variant-picker';
 import { useAddToCart } from '@/features/cart';
-import { money } from '@/lib/utils';
+import { mediaSrc, money } from '@/lib/utils';
 
 export default function ProductPage() {
   const params = useParams<{ slug: string }>();
@@ -33,10 +33,13 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
   const [qty, setQty] = useState(1);
 
   const priceMinor = product.hasVariants ? active?.priceMinor ?? product.priceFromMinor : product.basePriceMinor;
+  const offerMinor = product.hasVariants ? active?.offerPriceMinor ?? null : product.offerPriceMinor;
   const stock = product.hasVariants ? active?.stock ?? 0 : product.baseStock;
   const images = useMemo(() => {
-    const imgs = product.hasVariants && active?.images.length ? active.images : [];
-    return [...imgs, product.imageUrl].filter(Boolean) as string[];
+    // Variant images first, then the product's common media images.
+    const variantImgs = product.hasVariants && active?.images.length ? active.images : [];
+    const commonImgs = product.media.filter((m) => m.type === 'image').map((m) => m.url);
+    return [...variantImgs, ...commonImgs].filter(Boolean) as string[];
   }, [product, active]);
   const [mainIdx, setMainIdx] = useState(0);
   useEffect(() => setMainIdx(0), [active?.id]);
@@ -64,7 +67,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
         <div className="flex flex-col gap-3">
           <div className="relative aspect-square overflow-hidden rounded-2xl border bg-muted">
             {images[mainIdx] ? (
-              <Image src={images[mainIdx]} alt={product.name} fill className="object-cover" sizes="(min-width:768px) 50vw, 100vw" priority />
+              <Image src={mediaSrc(images[mainIdx])} alt={product.name} fill className="object-cover" sizes="(min-width:768px) 50vw, 100vw" priority />
             ) : (
               <div className="grid h-full place-items-center text-muted-foreground"><ShoppingBag className="size-10" /></div>
             )}
@@ -77,7 +80,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                   onClick={() => setMainIdx(i)}
                   className={`relative size-16 overflow-hidden rounded-lg border-2 ${i === mainIdx ? 'border-primary' : 'border-transparent'}`}
                 >
-                  <Image src={src} alt="" fill className="object-cover" sizes="64px" />
+                  <Image src={mediaSrc(src)} alt="" fill className="object-cover" sizes="64px" />
                 </button>
               ))}
             </div>
@@ -87,7 +90,16 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
         {/* Info */}
         <div>
           <h1 className="text-3xl font-bold">{product.name}</h1>
-          <div className="mt-3 text-2xl font-semibold">{money(priceMinor, product.currency)}</div>
+          <div className="mt-3 flex items-baseline gap-2">
+            {offerMinor != null ? (
+              <>
+                <span className="text-2xl font-semibold">{money(offerMinor, product.currency)}</span>
+                <span className="text-lg text-muted-foreground line-through">{money(priceMinor, product.currency)}</span>
+              </>
+            ) : (
+              <span className="text-2xl font-semibold">{money(priceMinor, product.currency)}</span>
+            )}
+          </div>
 
           {product.description && (
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{product.description}</p>

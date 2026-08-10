@@ -1,10 +1,16 @@
 import { api } from '@/lib/api-client';
 import type {
+  Announcement,
   AttributeType,
   CategoryNode,
+  FaqItem,
+  HeroBanner,
+  HeroConfig,
   ListingItem,
   ProductDetail,
   ReviewSummary,
+  SiteContent,
+  SocialLink,
 } from '@/lib/types';
 import type { ProductQuery } from '../types';
 
@@ -42,4 +48,54 @@ export function fetchProduct(idOrSlug: string) {
 
 export function fetchReviews(productId: string) {
   return api.get<ReviewSummary>(`/api/products/${productId}/reviews`);
+}
+
+export function fetchHero() {
+  return api.get<HeroConfig>('/api/hero');
+}
+
+/** Admin: add a hero banner (image + link). */
+export function createHero(input: { imageUrl: string; linkUrl: string }) {
+  return api.post<HeroBanner>('/api/hero', input);
+}
+
+/** Admin: edit a hero banner (any subset of fields). */
+export function updateHero(
+  id: string,
+  input: Partial<{ imageUrl: string; linkUrl: string }>,
+) {
+  return api.patch<HeroBanner>(`/api/hero/${id}`, input);
+}
+
+/** Admin: persist the banner display order. */
+export function reorderHero(ids: string[]) {
+  return api.put('/api/hero/reorder', { ids });
+}
+
+/** Admin: set the store-wide hero aspect ratio. */
+export function setHeroAspect(input: { aspectWidth: number; aspectHeight: number }) {
+  return api.put('/api/hero/aspect', input);
+}
+
+/** Admin: remove a hero banner. */
+export function deleteHero(id: string) {
+  return api.del(`/api/hero/${id}`);
+}
+
+export function fetchAnnouncement() {
+  return api.get<Announcement>('/api/announcement');
+}
+
+/** Admin: set the announcement bar messages + on/off. */
+export function setAnnouncement(input: { messages: string[]; active: boolean }) {
+  return api.put<Announcement>('/api/announcement', input);
+}
+
+export function fetchContent() {
+  return api.get<SiteContent>('/api/content');
+}
+
+/** Admin: update FAQ and/or footer social links (either may be omitted). */
+export function setContent(input: { faqs?: FaqItem[]; socials?: SocialLink[] }) {
+  return api.put<SiteContent>('/api/content', input);
 }

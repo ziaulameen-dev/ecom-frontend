@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Announcement bar marquee — the track holds two identical halves, so a −50%
+ * shift loops seamlessly. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
 /*
  * Design tokens — the single source of truth for color. Components must use the
  * mapped Tailwind tokens (bg-primary, text-muted-foreground, bg-brand, …), never
@@ -149,5 +156,31 @@
     color: var(--foreground);
     font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+  }
+  /*
+   * Tailwind v4's Preflight no longer sets `cursor: pointer` on buttons (it
+   * follows the browser default). Restore the pointer cursor for every
+   * clickable element — native buttons/links/inputs and ARIA-role controls
+   * (Radix triggers render as <button> or role="…"). Disabled ones opt out.
+   */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='menuitem'],
+  [role='option'],
+  [role='tab'],
+  [role='switch'],
+  [role='checkbox'],
+  [role='radio'],
+  label[for],
+  summary,
+  a[href],
+  select:not(:disabled),
+  [type='button']:not(:disabled),
+  [type='submit']:not(:disabled),
+  [type='reset']:not(:disabled),
+  [type='checkbox']:not(:disabled),
+  [type='radio']:not(:disabled),
+  [type='file']:not(:disabled)::-webkit-file-upload-button {
+    cursor: pointer;
   }
 }

@@ -134,7 +134,11 @@ function ProfileTab({ email, name }: { email: string; name: string | null }) {
   );
 }
 
-const RETURNABLE = ['shipped', 'delivered', 'fulfilled'];
+// Returns are a post-delivery action; before that the customer can only cancel.
+const RETURNABLE = ['delivered'];
+// Cancel is allowed until the order ships (matches the API, which rejects a
+// cancel once shipped/fulfilled/delivered).
+const CANCELLABLE = ['pending', 'paid', 'processing'];
 const returnBadge: Record<string, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
   requested: 'secondary', approved: 'default', received: 'default', refunded: 'success', rejected: 'destructive',
 };
@@ -175,7 +179,7 @@ function OrdersTab() {
               <div className="flex items-center justify-between gap-2">
                 <span className="font-semibold">{money(o.totalMinor, o.currency)}</span>
                 <div className="flex items-center gap-2">
-                  {['pending', 'paid'].includes(o.status) && (
+                  {CANCELLABLE.includes(o.status) && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -208,7 +212,7 @@ function OrdersTab() {
                   {ret.images?.length > 0 && (
                     <div className="mt-2 flex gap-2">
                       {ret.images.map((key) => (
-                        <AuthImage key={key} path={`/api/returns/${ret.id}/images/${key.split('/').pop()}`} className="size-14 rounded-md border object-cover" />
+                        <AuthImage key={key} zoomable path={`/api/returns/${ret.id}/images/${key.split('/').pop()}`} className="size-14 rounded-md border object-cover" />
                       ))}
                     </div>
                   )}

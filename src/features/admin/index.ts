@@ -12,17 +12,20 @@ export {
   useAddVariant,
   useUpdateVariant,
   useDeleteVariant,
+  useUploadProductImage,
 } from './hooks/use-admin-products';
 
 export {
   useAdminCategories,
   useCreateCategory,
+  useUpdateCategory,
   useDeleteCategory,
 } from './hooks/use-admin-categories';
 
 export {
   useAdminAttributes,
   useCreateAttributeType,
+  useUpdateAttributeType,
   useAddAttributeValue,
   useDeleteAttributeType,
   useDeleteAttributeValue,

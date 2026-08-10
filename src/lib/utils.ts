@@ -1,9 +1,21 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { API_BASE } from './config';
 
 /** Merge conditional + conflicting Tailwind classes (shadcn's helper). */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/**
+ * Resolve an image URL for rendering. Absolute URLs (http/https/data/blob) pass
+ * through; API-relative paths (e.g. MinIO-served "/api/products/images/…") get
+ * the gateway origin prepended so they resolve from the browser.
+ */
+export function mediaSrc(url: string | null | undefined): string {
+  if (!url) return '';
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  return `${API_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 /** Format paise as INR (India-only store). */

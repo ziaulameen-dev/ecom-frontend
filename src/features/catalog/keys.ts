@@ -7,4 +7,7 @@ export const catalogKeys = {
   products: (params: ProductQuery) => ['products', params] as const,
   product: (idOrSlug: string) => ['product', idOrSlug] as const,
   reviews: (productId: string) => ['reviews', productId] as const,
+  hero: ['hero'] as const,
+  announcement: ['announcement'] as const,
+  content: ['content'] as const,
 };
