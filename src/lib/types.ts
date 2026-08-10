@@ -156,6 +156,7 @@ export interface Review {
   rating: number;
   title: string | null;
   body: string;
+  images: string[];
   authorName: string;
   createdAt: string;
 }

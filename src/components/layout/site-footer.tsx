@@ -18,18 +18,10 @@ const HELP: [string, string][] = [
   ['Track order', '/account?tab=orders'],
   ['Contact us', '/faq'],
 ];
-// Shown until an admin configures socials in Settings.
-const DEFAULT_SOCIALS = [
-  { label: 'Facebook', url: '#' },
-  { label: 'Instagram', url: '#' },
-  { label: 'Twitter', url: '#' },
-  { label: 'Youtube', url: '#' },
-  { label: 'Snapchat', url: '#' },
-];
-
 export function SiteFooter() {
   const { data: content } = useContent();
-  const socials = content?.socials?.length ? content.socials : DEFAULT_SOCIALS;
+  // Only show socials an admin actually configured (with a real URL).
+  const socials = (content?.socials ?? []).filter((s) => s.url && s.url !== '#');
   const [email, setEmail] = useState('');
 
   const [busy, setBusy] = useState(false);

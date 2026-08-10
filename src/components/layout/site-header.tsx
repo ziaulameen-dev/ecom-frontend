@@ -61,19 +61,28 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 bg-background/90 backdrop-blur">
       {/* Row 1 — search · brand · profile/wishlist/cart (borderless) */}
       <div className="mx-auto grid h-12 max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-3 xl:px-0">
-        <div className="justify-self-start">
-          {/* Desktop: inline search field */}
-          <form onSubmit={search} className="relative hidden w-54 sm:block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search…"
-              aria-label="Search products"
-              className="h-8 w-full rounded-full border bg-transparent pl-8 pr-3 text-[11px] uppercase tracking-widest outline-none placeholder:text-muted-foreground focus:border-foreground/30"
-            />
-          </form>
-          {/* Mobile: icon that opens the search popup */}
+        {/* Desktop: inline search field (col 1). Hidden below sm so the brand
+            can take the left slot there. */}
+        <form onSubmit={search} className="relative col-start-1 hidden w-54 justify-self-start sm:block">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search…"
+            aria-label="Search products"
+            className="h-8 w-full rounded-full border bg-transparent pl-8 pr-3 text-[11px] uppercase tracking-widest outline-none placeholder:text-muted-foreground focus:border-foreground/30"
+          />
+        </form>
+
+        <Link
+          href="/"
+          className="col-start-1 justify-self-start whitespace-nowrap text-base font-bold uppercase tracking-[0.2em] sm:col-start-2 sm:justify-self-center sm:text-xl sm:tracking-[0.3em] md:absolute md:left-1/2 md:top-1/2 md:z-10 md:-translate-x-1/2 md:-translate-y-1/2"
+        >
+          {STORE_NAME}
+        </Link>
+
+        <div className="col-start-3 flex items-center justify-end">
+          {/* Mobile: search icon lives on the right, next to the other actions */}
           <Button
             type="button"
             variant="ghost"
@@ -84,16 +93,6 @@ export function SiteHeader() {
           >
             <Search />
           </Button>
-        </div>
-
-        <Link
-          href="/"
-          className="justify-self-center whitespace-nowrap text-base font-bold uppercase tracking-[0.2em] sm:text-xl sm:tracking-[0.3em] md:absolute md:left-1/2 md:top-1/2 md:z-10 md:-translate-x-1/2 md:-translate-y-1/2"
-        >
-          {STORE_NAME}
-        </Link>
-
-        <div className="flex items-center justify-end md:col-start-3">
           <Link href="/account" aria-label="Account">
             <Button variant="ghost" size="icon" className="size-9 rounded-full"><User /></Button>
           </Link>

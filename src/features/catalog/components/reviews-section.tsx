@@ -1,9 +1,10 @@
 'use client';
 
+import Image from 'next/image';
 import { RatingStars } from '@/components/rating-stars';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useReviews } from '../hooks/use-reviews';
-import { formatDate } from '@/lib/utils';
+import { formatDate, mediaSrc } from '@/lib/utils';
 
 export function ReviewsSection({ productId }: { productId: string }) {
   const { data, isLoading } = useReviews(productId);
@@ -56,6 +57,21 @@ export function ReviewsSection({ productId }: { productId: string }) {
                 <RatingStars value={rev.rating} className="mt-1" />
                 {rev.title && <div className="mt-2 font-medium">{rev.title}</div>}
                 <p className="mt-1 text-sm text-muted-foreground">{rev.body}</p>
+                {rev.images?.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {rev.images.map((url) => (
+                      <a
+                        key={url}
+                        href={mediaSrc(url)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="relative size-20 overflow-hidden rounded-lg border transition hover:opacity-90"
+                      >
+                        <Image src={mediaSrc(url)} alt="Review photo" fill sizes="80px" className="object-cover" />
+                      </a>
+                    ))}
+                  </div>
+                )}
               </li>
             ))}
           </ul>

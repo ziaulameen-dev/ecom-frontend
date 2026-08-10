@@ -1,6 +1,7 @@
 'use client';
 
-import { MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { ImagePlus, MoreHorizontal, Plus, Search, Trash2, X } from 'lucide-react';
+import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
@@ -20,9 +21,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useAdminProducts, useAdminReviews, useCreateReview, useDeleteReview,
+  useUploadProductImage,
 } from '@/features/admin';
 import type { Review } from '@/lib/types';
-import { formatDate } from '@/lib/utils';
+import { formatDate, mediaSrc } from '@/lib/utils';
 
 export default function AdminReviewsPage() {
   const { data: products } = useAdminProducts();
@@ -126,6 +128,18 @@ function ReviewRow({ review, productName }: { review: Review; productName: strin
         <div className="min-w-0 max-w-80">
           {review.title && <div className="truncate font-medium">{review.title}</div>}
           <div className="truncate text-muted-foreground">{review.body}</div>
+          {review.images?.length > 0 && (
+            <div className="mt-1.5 flex gap-1">
+              {review.images.slice(0, 4).map((url) => (
+                <div key={url} className="relative size-8 overflow-hidden rounded border">
+                  <Image src={mediaSrc(url)} alt="" fill sizes="32px" className="object-cover" />
+                </div>
+              ))}
+              {review.images.length > 4 && (
+                <span className="self-center text-xs text-muted-foreground">+{review.images.length - 4}</span>
+              )}
+            </div>
+          )}
         </div>
       </td>
       <td className="px-4 py-3 text-muted-foreground">{formatDate(review.createdAt)}</td>
@@ -154,20 +168,41 @@ function ReviewRow({ review, productName }: { review: Review; productName: strin
 function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
   const { data: products } = useAdminProducts();
   const create = useCreateReview();
+  const upload = useUploadProductImage();
+  const [uploading, setUploading] = useState(false);
 
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ productId: '', rating: 5, title: '', body: '', authorName: '' });
+  const [f, setF] = useState({ productId: '', rating: 5, title: '', body: '', authorName: '', images: [] as string[] });
 
   // Effective product: user's choice, or default to the first product.
   const productId = f.productId || products?.[0]?.id || '';
+
+  async function addImages(files: FileList | null) {
+    if (!files?.length) return;
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files)) {
+        if (!file.type.startsWith('image/')) continue;
+        const res = await upload.mutateAsync(file);
+        urls.push(res.url);
+      }
+      setF((s) => ({ ...s, images: [...s.images, ...urls].slice(0, 8) }));
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function submit() {
     try {
       await create.mutateAsync({
         productId, rating: Number(f.rating),
         title: f.title || undefined, body: f.body, authorName: f.authorName,
+        images: f.images,
       });
-      setF((s) => ({ ...s, title: '', body: '', authorName: '' }));
+      setF((s) => ({ ...s, title: '', body: '', authorName: '', images: [] }));
       toast.success('Review added');
       setOpen(false);
     } catch (e) { toast.error((e as Error).message); }
@@ -211,12 +246,44 @@ function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
             <Label htmlFor="r-body">Review</Label>
             <Textarea id="r-body" className="min-h-24" value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />
           </div>
+          <div className="flex flex-col gap-2">
+            <Label>Photos <span className="text-muted-foreground">(optional, up to 8)</span></Label>
+            <div className="flex flex-wrap gap-2">
+              {f.images.map((url) => (
+                <div key={url} className="relative size-16 overflow-hidden rounded-md border">
+                  <Image src={mediaSrc(url)} alt="Review photo" fill sizes="64px" className="object-cover" />
+                  <button
+                    type="button"
+                    aria-label="Remove photo"
+                    onClick={() => setF((s) => ({ ...s, images: s.images.filter((u) => u !== url) }))}
+                    className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white transition hover:bg-black/80"
+                  >
+                    <X className="size-3" />
+                  </button>
+                </div>
+              ))}
+              {f.images.length < 8 && (
+                <label className="flex size-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed text-muted-foreground transition hover:border-foreground/40 hover:text-foreground">
+                  <ImagePlus className="size-4" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    disabled={uploading}
+                    onChange={(e) => { addImages(e.target.files); e.target.value = ''; }}
+                  />
+                </label>
+              )}
+            </div>
+            {uploading && <p className="text-xs text-muted-foreground">Uploading…</p>}
+          </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button
               type="button"
               onClick={submit}
-              disabled={!productId || f.body.length < 2 || f.authorName.length < 2 || create.isPending}
+              disabled={!productId || f.body.length < 2 || f.authorName.length < 2 || create.isPending || uploading}
             >
               {create.isPending ? 'Saving…' : 'Add review'}
             </Button>
