@@ -1,6 +1,7 @@
 'use client';
 
 import { Eye, GripVertical, ImagePlus, Loader2, Play, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { MediaItem } from '@/lib/types';
@@ -78,8 +79,7 @@ export function MediaManager({
                 </span>
               </>
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaSrc(m.url)} alt="" className="h-full w-full object-cover" />
+              <Image src={mediaSrc(m.url)} alt="" fill unoptimized sizes="200px" className="object-cover" />
             )}
             {i === coverIdx && (
               <span className="absolute right-1 top-1 rounded bg-foreground px-1 py-0.5 text-[10px] text-background">Cover</span>

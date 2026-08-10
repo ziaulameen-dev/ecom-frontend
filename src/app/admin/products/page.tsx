@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronDown, ChevronRight, Eye, ImageOff, MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -143,8 +144,7 @@ function ProductRow({ product, valueLabel }: { product: AdminProduct; valueLabel
           )}
           <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted/40">
             {product.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaSrc(product.imageUrl)} alt={product.name} className="h-full w-full object-cover" />
+              <Image src={mediaSrc(product.imageUrl)} alt={product.name} width={40} height={40} unoptimized className="h-full w-full object-cover" />
             ) : (
               <ImageOff className="size-4 text-muted-foreground" />
             )}
@@ -210,8 +210,7 @@ function ProductRow({ product, valueLabel }: { product: AdminProduct; valueLabel
         <td className="py-2 pl-11 pr-4">
           <div className="flex items-center gap-2">
             {v.images[0] ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaSrc(v.images[0])} alt="" className="size-8 shrink-0 rounded border object-cover" />
+              <Image src={mediaSrc(v.images[0])} alt="" width={32} height={32} unoptimized className="size-8 shrink-0 rounded border object-cover" />
             ) : (
               <span className="grid size-8 shrink-0 place-items-center rounded border bg-muted/40"><ImageOff className="size-3.5 text-muted-foreground" /></span>
             )}

@@ -1,6 +1,7 @@
 'use client';
 
 import { ArrowLeft, ImageOff, Pencil } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
@@ -124,8 +125,7 @@ export default function ViewProductPage() {
                       {m.type === 'video' ? (
                         <video src={mediaSrc(m.url)} className="h-full w-full object-cover" muted playsInline controls />
                       ) : (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={mediaSrc(m.url)} alt="" className="h-full w-full object-cover" />
+                        <Image src={mediaSrc(m.url)} alt="" width={200} height={200} unoptimized className="h-full w-full object-cover" />
                       )}
                     </div>
                   ))}

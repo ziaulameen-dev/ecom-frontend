@@ -1,6 +1,7 @@
 'use client';
 
 import { Pencil, Plus, Trash2, X } from 'lucide-react';
+import Image from 'next/image';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
@@ -60,8 +61,7 @@ export function VariantsManager({ product }: { product: AdminProduct }) {
         {product.variants.map((v) => (
           <div key={v.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm">
             {v.images[0] && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={mediaSrc(v.images[0])} alt="" className="size-10 shrink-0 rounded-md border object-cover" />
+              <Image src={mediaSrc(v.images[0])} alt="" width={40} height={40} unoptimized className="size-10 shrink-0 rounded-md border object-cover" />
             )}
             <span className="flex flex-wrap gap-1">
               {v.valueIds.map((id) => (

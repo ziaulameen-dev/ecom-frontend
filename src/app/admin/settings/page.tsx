@@ -1,6 +1,7 @@
 'use client';
 
 import { GripVertical, Pencil, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
@@ -259,8 +260,7 @@ function HeroManager() {
                 <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
                 <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-muted">
                   {b.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={mediaSrc(b.imageUrl)} alt="" className="h-full w-full object-cover" />
+                    <Image src={mediaSrc(b.imageUrl)} alt="" width={80} height={48} unoptimized className="h-full w-full object-cover" />
                   )}
                 </div>
                 <div className="min-w-0 flex-1 text-xs">
@@ -379,8 +379,7 @@ function BannerDialog({
             style={{ aspectRatio: `${aspectWidth} / ${aspectHeight}` }}
           >
             {preview ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={preview} alt="Banner preview" className="h-full w-full object-cover" />
+              <Image src={preview} alt="Banner preview" width={800} height={450} unoptimized className="h-full w-full object-cover" />
             ) : (
               <div className="grid h-full place-items-center text-xs text-muted-foreground">Preview</div>
             )}

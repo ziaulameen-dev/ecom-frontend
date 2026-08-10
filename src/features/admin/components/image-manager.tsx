@@ -1,6 +1,7 @@
 'use client';
 
 import { Eye, GripVertical, ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { cn, mediaSrc } from '@/lib/utils';
@@ -62,8 +63,7 @@ export function ImageManager({
           onDrop={() => onDrop(i)}
           className={cn('group relative size-16 overflow-hidden rounded-md border bg-muted/40', dragIdx === i && 'opacity-50')}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={mediaSrc(url)} alt="" className="h-full w-full object-cover" />
+          <Image src={mediaSrc(url)} alt="" fill unoptimized sizes="64px" className="object-cover" />
           <span
             draggable
             onDragStart={() => setDragIdx(i)}
