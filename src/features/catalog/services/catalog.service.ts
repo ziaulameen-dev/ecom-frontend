@@ -99,3 +99,8 @@ export function fetchContent() {
 export function setContent(input: { faqs?: FaqItem[]; socials?: SocialLink[] }) {
   return api.put<SiteContent>('/api/content', input);
 }
+
+/** Public: join the newsletter. */
+export function subscribeNewsletter(email: string, source = 'footer') {
+  return api.post<{ ok: true }>('/api/newsletter/subscribe', { email, source });
+}

@@ -88,7 +88,7 @@ export function ProductCard({ item }: { item: ListingItem }) {
         {/* Add to cart — slides up on hover. */}
         <div className="absolute inset-x-2 bottom-2 z-10 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
           <Button
-            className="w-full rounded-sm w-fit"
+            className="w-full rounded-sm"
             size="sm"
             disabled={!item.inStock || add.isPending}
             onClick={onAdd}

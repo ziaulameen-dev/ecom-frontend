@@ -8,7 +8,18 @@ import type {
   Coupon,
   OrderStatus,
   Review,
+  Subscriber,
 } from '@/lib/types';
+
+export function fetchSubscribers() {
+  return api.get<Subscriber[]>('/api/newsletter/admin/subscribers');
+}
+export function sendBroadcast(input: { subject: string; html: string }) {
+  return api.post<{ sent: number; total: number }>('/api/newsletter/admin/broadcast', input);
+}
+export function notifyProduct(productId: string) {
+  return api.post<{ sent: number; total: number }>('/api/newsletter/admin/notify-product', { productId });
+}
 
 /**
  * Admin HTTP calls (the "service" layer). These are thin wrappers over the API

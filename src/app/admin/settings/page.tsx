@@ -11,7 +11,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
-import { useSetShippingRate, useShippingRate, useUploadProductImage } from '@/features/admin';
+import {
+  useAdminProducts,
+  useBroadcast,
+  useNotifyProduct,
+  useSetShippingRate,
+  useShippingRate,
+  useSubscribers,
+  useUploadProductImage,
+} from '@/features/admin';
 import {
   useAnnouncement,
   useContent,
@@ -36,6 +44,7 @@ const TABS = [
   { id: 'announcement', label: 'Announcement' },
   { id: 'faq', label: 'FAQ' },
   { id: 'social', label: 'Social links' },
+  { id: 'newsletter', label: 'Newsletter' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -72,6 +81,7 @@ export default function AdminSettingsPage() {
       {tab === 'announcement' && <AnnouncementCard />}
       {tab === 'faq' && <FaqCard />}
       {tab === 'social' && <SocialCard />}
+      {tab === 'newsletter' && <NewsletterCard />}
     </div>
   );
 }
@@ -578,5 +588,128 @@ function SocialCard() {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/* -------------------------------------------------------------- Newsletter */
+
+function NewsletterCard() {
+  const { data: subs, isLoading } = useSubscribers();
+  const broadcast = useBroadcast();
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+
+  const active = (subs ?? []).filter((s) => s.status === 'active');
+
+  function send() {
+    if (subject.trim().length < 2 || body.trim().length < 2) {
+      return toast.error('Add a subject and message');
+    }
+    const html = body
+      .split('\n')
+      .map((line) => `<p>${line.replace(/</g, '&lt;')}</p>`)
+      .join('');
+    broadcast.mutate(
+      { subject: subject.trim(), html },
+      {
+        onSuccess: (r) => {
+          toast.success(`Sent to ${r.sent} of ${r.total} subscribers`);
+          setSubject('');
+          setBody('');
+        },
+        onError: (e) => toast.error((e as Error).message),
+      },
+    );
+  }
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Send a broadcast</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="nl-subject">Subject</Label>
+            <Input id="nl-subject" value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="New arrivals just dropped 🎉" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="nl-body">Message</Label>
+            <Textarea id="nl-body" rows={7} value={body} onChange={(e) => setBody(e.target.value)} placeholder={'Hi there,\n\nCheck out our latest products…'} />
+            <p className="text-xs text-muted-foreground">
+              Sends to {active.length} active subscriber{active.length === 1 ? '' : 's'}. An unsubscribe link is added automatically.
+            </p>
+          </div>
+          <Button onClick={send} disabled={broadcast.isPending || active.length === 0}>
+            {broadcast.isPending ? 'Sending…' : 'Send broadcast'}
+          </Button>
+
+          <div className="border-t pt-4">
+            <AnnounceProduct disabled={active.length === 0} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Subscribers{subs ? ` (${active.length} active / ${subs.length})` : ''}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-32 w-full" />
+          ) : !subs?.length ? (
+            <p className="text-sm text-muted-foreground">No subscribers yet.</p>
+          ) : (
+            <div className="max-h-80 space-y-1 overflow-y-auto text-sm">
+              {subs.map((s) => (
+                <div key={s.id} className="flex items-center justify-between gap-2 border-b py-1.5 last:border-0">
+                  <span className={cn('truncate', s.status === 'unsubscribed' && 'text-muted-foreground line-through')}>{s.email}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{s.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+/** Email active subscribers a "new arrival" for a chosen product. */
+function AnnounceProduct({ disabled }: { disabled?: boolean }) {
+  const { data: products } = useAdminProducts();
+  const notify = useNotifyProduct();
+  const [productId, setProductId] = useState('');
+
+  function send() {
+    if (!productId) return toast.error('Pick a product');
+    notify.mutate(productId, {
+      onSuccess: (r) => toast.success(`Sent to ${r.sent} of ${r.total} subscribers`),
+      onError: (e) => toast.error((e as Error).message),
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor="nl-product">Announce a product (new arrival)</Label>
+      <div className="flex gap-2">
+        <select
+          id="nl-product"
+          value={productId}
+          onChange={(e) => setProductId(e.target.value)}
+          className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm"
+        >
+          <option value="">Select a product…</option>
+          {(products ?? []).map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <Button size="sm" onClick={send} disabled={notify.isPending || disabled || !productId}>
+          {notify.isPending ? 'Sending…' : 'Send'}
+        </Button>
+      </div>
+    </div>
   );
 }

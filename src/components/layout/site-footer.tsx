@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { useContent } from '@/features/catalog';
+import { subscribeNewsletter, useContent } from '@/features/catalog';
 import { STORE_NAME } from '@/lib/config';
 
 const SHOP: [string, string][] = [
@@ -32,11 +32,20 @@ export function SiteFooter() {
   const socials = content?.socials?.length ? content.socials : DEFAULT_SOCIALS;
   const [email, setEmail] = useState('');
 
-  function subscribe(e: React.FormEvent) {
+  const [busy, setBusy] = useState(false);
+  async function subscribe(e: React.FormEvent) {
     e.preventDefault();
-    if (!email.trim()) return;
-    toast.success('Subscribed — thanks for signing up!');
-    setEmail('');
+    if (!email.trim() || busy) return;
+    setBusy(true);
+    try {
+      await subscribeNewsletter(email.trim());
+      toast.success('Subscribed — thanks for signing up!');
+      setEmail('');
+    } catch (err) {
+      toast.error((err as Error).message || 'Could not subscribe');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -61,9 +70,10 @@ export function SiteFooter() {
               />
               <button
                 type="submit"
-                className="h-11 shrink-0 bg-primary px-6 text-[11px] font-medium uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90"
+                disabled={busy}
+                className="h-11 shrink-0 bg-primary px-6 text-[11px] font-medium uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                Subscribe
+                {busy ? 'Joining…' : 'Subscribe'}
               </button>
             </form>
           </div>

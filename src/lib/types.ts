@@ -54,6 +54,16 @@ export interface SiteContent {
   socials: SocialLink[];
 }
 
+/** A newsletter subscriber (admin view). */
+export interface Subscriber {
+  id: string;
+  email: string;
+  status: 'active' | 'unsubscribed';
+  source: string | null;
+  createdAt: string;
+  unsubscribedAt: string | null;
+}
+
 export interface AttributeValue {
   id: string;
   typeId: string;

@@ -12,3 +12,4 @@ export { useReviews } from './hooks/use-reviews';
 export { useHero, useCreateHero, useUpdateHero, useReorderHero, useSetHeroAspect, useDeleteHero } from './hooks/use-hero';
 export { useAnnouncement, useSetAnnouncement } from './hooks/use-announcement';
 export { useContent, useSetContent } from './hooks/use-content';
+export { subscribeNewsletter } from './services/catalog.service';
