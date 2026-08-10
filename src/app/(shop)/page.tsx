@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { useCategoryTree, useHero, useProducts } from '@/features/catalog';
+import { useCategoryTree, useContent, useHero, useProducts } from '@/features/catalog';
 import { CategoryCard } from '@/features/catalog/components/category-card';
 import { HeroCarousel } from '@/features/catalog/components/hero-carousel';
 import { ProductRow } from '@/features/catalog/components/product-row';
@@ -16,7 +16,9 @@ export default function HomePage() {
   const { data: tree } = useCategoryTree();
   const { data: hero } = useHero();
   const { data: products, isLoading } = useProducts({ limit: 30 });
+  const { data: content } = useContent();
 
+  const faqs = content?.faqs ?? [];
   const banners = hero?.banners ?? [];
   const ratio = `${hero?.aspectWidth ?? 500} / ${hero?.aspectHeight ?? 265}`;
 
@@ -36,7 +38,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero — admin-managed banner carousel (falls back to a bundled image). */}
-      <section className="mx-auto max-w-7xl px-4 pt-6 md:pt-4">
+      <section className="mx-auto max-w-7xl px-4 pt-6 lg:px-40">
         {banners.length > 0 ? (
           <HeroCarousel
             banners={banners}
@@ -80,10 +82,33 @@ export default function HomePage() {
       </section>
 
       {/* New arrivals — horizontal strip */}
-      <section className="mx-auto mb-24 mt-16 max-w-7xl px-4">
+      <section className="mx-auto mt-16 max-w-7xl px-4">
         <SectionHead title="New arrivals" href="/shop?sort=new" />
         <ProductRow items={newArrivals} loading={isLoading} />
       </section>
+
+      {/* FAQ — admin-managed, shown only when questions exist */}
+      {faqs.length > 0 && (
+        <section className="mx-auto mb-24 mt-20 max-w-3xl px-4">
+          <SectionHead title="Frequently asked questions" href="/faq" />
+          <div className="divide-y border-t">
+            {faqs.map((faq, i) => (
+              <details key={i} className="group py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
+                  {faq.question}
+                  <span className="text-muted-foreground transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">
+                  {faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Keep bottom spacing when there are no FAQs */}
+      {faqs.length === 0 && <div className="mb-24" />}
     </div>
   );
 }

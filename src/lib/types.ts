@@ -257,6 +257,7 @@ export interface Coupon {
   minSubtotalMinor: number;
   maxDiscountMinor: number | null;
   maxRedemptions: number | null;
+  maxPerUser: number | null;
   timesRedeemed: number;
   active: boolean;
   expiresAt: string | null;

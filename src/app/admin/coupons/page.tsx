@@ -136,10 +136,10 @@ function CouponRow({ coupon }: { coupon: Coupon }) {
 function CouponDialog({ trigger }: { trigger: React.ReactNode }) {
   const create = useCreateCoupon();
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ code: '', type: 'percent' as 'percent' | 'fixed', value: 10, minSubtotalMinor: 0, maxRedemptions: '' });
+  const [f, setF] = useState({ code: '', type: 'percent' as 'percent' | 'fixed', value: 10, minSubtotalMinor: 0, maxRedemptions: '', maxPerUser: '' });
 
   function handleOpenChange(next: boolean) {
-    if (next) setF({ code: '', type: 'percent', value: 10, minSubtotalMinor: 0, maxRedemptions: '' });
+    if (next) setF({ code: '', type: 'percent', value: 10, minSubtotalMinor: 0, maxRedemptions: '', maxPerUser: '' });
     setOpen(next);
   }
 
@@ -151,6 +151,7 @@ function CouponDialog({ trigger }: { trigger: React.ReactNode }) {
         value: Number(f.value),
         minSubtotalMinor: Number(f.minSubtotalMinor) || 0,
         maxRedemptions: f.maxRedemptions ? Number(f.maxRedemptions) : undefined,
+        maxPerUser: f.maxPerUser ? Number(f.maxPerUser) : undefined,
       });
       toast.success('Coupon created');
       setOpen(false);
@@ -194,8 +195,15 @@ function CouponDialog({ trigger }: { trigger: React.ReactNode }) {
               <Input id="co-min" type="number" value={f.minSubtotalMinor} onChange={(e) => setF({ ...f, minSubtotalMinor: Number(e.target.value) })} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="co-max">Max uses</Label>
+              <Label htmlFor="co-max">Max uses (total)</Label>
               <Input id="co-max" type="number" value={f.maxRedemptions} onChange={(e) => setF({ ...f, maxRedemptions: e.target.value })} placeholder="∞" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="co-peruser">Max per customer</Label>
+              <Input id="co-peruser" type="number" value={f.maxPerUser} onChange={(e) => setF({ ...f, maxPerUser: e.target.value })} placeholder="∞" />
             </div>
           </div>
 
