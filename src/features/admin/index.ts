@@ -54,4 +54,4 @@ export {
 } from './hooks/use-admin-reviews';
 
 export { useShippingRate, useSetShippingRate } from './hooks/use-admin-shipping';
-export { useSubscribers, useBroadcast, useNotifyProduct } from './hooks/use-admin-newsletter';
+export { useSubscribers, useCustomers, useBroadcast, useNotifyProduct } from './hooks/use-admin-newsletter';

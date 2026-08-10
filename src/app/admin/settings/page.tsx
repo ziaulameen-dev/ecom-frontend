@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -694,17 +695,16 @@ function AnnounceProduct({ disabled }: { disabled?: boolean }) {
     <div className="flex flex-col gap-2">
       <Label htmlFor="nl-product">Announce a product (new arrival)</Label>
       <div className="flex gap-2">
-        <select
-          id="nl-product"
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          className="h-10 min-w-0 flex-1 rounded-md border border-input bg-background px-3 text-sm"
-        >
-          <option value="">Select a product…</option>
-          {(products ?? []).map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
+        <Select value={productId} onValueChange={setProductId}>
+          <SelectTrigger id="nl-product" className="min-w-0 flex-1">
+            <SelectValue placeholder="Select a product…" />
+          </SelectTrigger>
+          <SelectContent>
+            {(products ?? []).map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button size="sm" onClick={send} disabled={notify.isPending || disabled || !productId}>
           {notify.isPending ? 'Sending…' : 'Send'}
         </Button>

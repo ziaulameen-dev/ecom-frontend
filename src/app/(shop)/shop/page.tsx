@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useMemo, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Suspense, useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useCategoryTree, useProducts } from '@/features/catalog';
 import { ProductGrid } from '@/features/catalog/components/product-grid';
@@ -42,9 +42,12 @@ function ShopInner() {
   const sortParam = sp.get('sort');
   const urlSort = (SORTS as string[]).includes(sortParam ?? '') ? (sortParam as Sort) : null;
   const [sort, setSort] = useState<Sort>(urlSort ?? 'featured');
-  useEffect(() => {
-    if (urlSort) setSort(urlSort);
-  }, [urlSort]);
+  // Follow the URL when it changes (render-time state adjust — no effect).
+  const [lastUrlSort, setLastUrlSort] = useState(urlSort);
+  if (urlSort && urlSort !== lastUrlSort) {
+    setLastUrlSort(urlSort);
+    setSort(urlSort);
+  }
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
 
@@ -127,18 +130,18 @@ function ShopInner() {
 
             <div>
               <Label htmlFor="sort" className="mb-2 block text-sm font-semibold">Sort by</Label>
-              <select
-                id="sort"
-                value={sort}
-                onChange={(e) => setSort(e.target.value as Sort)}
-                className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-              >
-                <option value="featured">Featured</option>
-                <option value="new">New arrivals</option>
-                <option value="best">Best selling</option>
-                <option value="price-asc">Price: low to high</option>
-                <option value="price-desc">Price: high to low</option>
-              </select>
+              <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
+                <SelectTrigger id="sort" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="new">New arrivals</SelectItem>
+                  <SelectItem value="best">Best selling</SelectItem>
+                  <SelectItem value="price-asc">Price: low to high</SelectItem>
+                  <SelectItem value="price-desc">Price: high to low</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </aside>

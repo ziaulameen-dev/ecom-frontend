@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  BadgePercent, Boxes, LayoutDashboard, ListTree, Mail, Menu, PackageSearch,
-  ShoppingCart, Star, Undo2, Settings, Store, X,
+  BadgePercent, Boxes, LayoutDashboard, ListTree, Menu, PackageSearch,
+  ShoppingCart, Star, Undo2, Settings, Store, Users, X,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -22,7 +22,7 @@ const NAV = [
   { href: '/admin/returns', label: 'Returns', icon: Undo2 },
   { href: '/admin/coupons', label: 'Coupons', icon: BadgePercent },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
-  { href: '/admin/subscribers', label: 'Subscribers', icon: Mail },
+  { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -66,11 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const sidebar = (
     <>
       <Link href="/admin" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 px-6 py-5 text-lg font-bold">
-        <Store className="size-5 text-foreground" /> Admin
-        <span
-          className={cn('ml-auto size-2 rounded-full', live ? 'bg-success' : 'bg-muted-foreground/40')}
-          title={live ? 'Live' : 'Offline'}
-        />
+        <Store className="size-5 text-foreground" /> {process.env.NEXT_PUBLIC_STORE_NAME ?? 'Admin'}
       </Link>
       <nav className="flex-1 space-y-1 px-3">
         {NAV.map((item) => {

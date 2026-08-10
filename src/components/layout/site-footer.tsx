@@ -38,8 +38,12 @@ export function SiteFooter() {
     if (!email.trim() || busy) return;
     setBusy(true);
     try {
-      await subscribeNewsletter(email.trim());
-      toast.success('Subscribed — thanks for signing up!');
+      const res = await subscribeNewsletter(email.trim());
+      toast.success(
+        res.status === 'verify'
+          ? 'Almost there — check your email to confirm your subscription.'
+          : 'Subscribed — thanks for signing up!',
+      );
       setEmail('');
     } catch (err) {
       toast.error((err as Error).message || 'Could not subscribe');

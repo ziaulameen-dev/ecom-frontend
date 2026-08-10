@@ -64,6 +64,16 @@ export interface Subscriber {
   unsubscribedAt: string | null;
 }
 
+/** A customer (auth-service user) for the admin panel. */
+export interface AdminCustomer {
+  id: string;
+  email: string;
+  name: string | null;
+  roles: string[];
+  deleted: boolean;
+  createdAt: string;
+}
+
 export interface AttributeValue {
   id: string;
   typeId: string;

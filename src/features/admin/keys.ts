@@ -9,4 +9,5 @@ export const adminKeys = {
   reviews: ['admin', 'reviews'] as const,
   shipping: ['admin', 'shipping'] as const,
   subscribers: ['admin', 'subscribers'] as const,
+  customers: ['admin', 'customers'] as const,
 };

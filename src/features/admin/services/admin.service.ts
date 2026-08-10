@@ -1,5 +1,6 @@
 import { api } from '@/lib/api-client';
 import type {
+  AdminCustomer,
   AdminOrder,
   AdminProduct,
   AdminReturn,
@@ -13,6 +14,9 @@ import type {
 
 export function fetchSubscribers() {
   return api.get<Subscriber[]>('/api/newsletter/admin/subscribers');
+}
+export function fetchCustomers() {
+  return api.get<AdminCustomer[]>('/auth/admin/users');
 }
 export function sendBroadcast(input: { subject: string; html: string }) {
   return api.post<{ sent: number; total: number }>('/api/newsletter/admin/broadcast', input);
