@@ -16,7 +16,7 @@ import {
 import { useCart } from '@/features/cart';
 import { useAuthModal, useMe } from '@/features/auth';
 import { useCategoryTree } from '@/features/catalog';
-import { useWishlist } from '@/features/wishlist';
+import { useWishlist, useWishlistSync } from '@/features/wishlist';
 import { STORE_NAME } from '@/lib/config';
 
 // `false` on the server + first client render, `true` after hydration — lets us
@@ -49,6 +49,7 @@ export function SiteHeader() {
   const wishCount = useWishlist((s) => s.ids.length);
   const mounted = useMounted();
   const tops = tree ?? [];
+  useWishlistSync(); // sync the wishlist with the server for logged-in users
 
   function search(e: React.FormEvent) {
     e.preventDefault();
