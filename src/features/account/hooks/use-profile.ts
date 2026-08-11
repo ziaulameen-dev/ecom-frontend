@@ -7,7 +7,7 @@ import { updateProfile } from '../services/account.service';
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name?: string; mobile?: string }) => updateProfile(input),
+    mutationFn: (input: { name?: string; mobile?: string; gender?: string }) => updateProfile(input),
     onSuccess: (user) => qc.setQueryData(authKeys.me, user),
   });
 }

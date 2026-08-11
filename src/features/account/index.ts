@@ -9,3 +9,4 @@ export { useAddresses, useCreateAddress, useDeleteAddress } from './hooks/use-ad
 export { useMyOrders, useOrder, useCancelOrder } from './hooks/use-orders';
 export { useMyReturns, useRequestReturn } from './hooks/use-returns';
 export { useUpdateProfile } from './hooks/use-profile';
+export { useCoupons } from './hooks/use-coupons';

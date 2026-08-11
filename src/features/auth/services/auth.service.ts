@@ -22,7 +22,7 @@ export function requestOtp(email: string) {
 }
 
 /** Step 2: verify the code; the server sets the session cookies on success. */
-export function verifyOtp(input: { email: string; otp: string; name?: string }) {
+export function verifyOtp(input: { email: string; otp: string; name?: string; gender?: string }) {
   return api.post<CookieAuthResult>('/auth/verify-otp', input, false);
 }
 

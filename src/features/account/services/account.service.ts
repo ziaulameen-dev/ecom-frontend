@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import type { AdminReturn, Address, Order, OrderItem, User } from '@/lib/types';
+import type { ActiveCoupon, AdminReturn, Address, Order, OrderItem, User } from '@/lib/types';
 import type { AddressInput } from '../types';
 
 /**
@@ -73,6 +73,13 @@ export async function requestReturn(input: {
 // ---- Profile --------------------------------------------------------------
 
 /** Update the current user's profile. */
-export function updateProfile(input: { name?: string; mobile?: string }) {
+export function updateProfile(input: { name?: string; mobile?: string; gender?: string }) {
   return api.patch<User>('/auth/profile', input);
+}
+
+// ---- Coupons --------------------------------------------------------------
+
+/** List coupons the customer can currently use (for the account Coupons tab). */
+export function fetchActiveCoupons() {
+  return api.get<ActiveCoupon[]>('/api/coupons');
 }

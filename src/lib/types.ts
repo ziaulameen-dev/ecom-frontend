@@ -192,7 +192,19 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  mobile: string | null;
+  gender: string | null;
   roles: string[];
+}
+
+/** Customer-facing coupon (from GET /api/coupons — currently usable codes). */
+export interface ActiveCoupon {
+  code: string;
+  type: 'percent' | 'fixed';
+  value: number;
+  minSubtotalMinor: number;
+  maxDiscountMinor: number | null;
+  expiresAt: string | null;
 }
 
 export interface Address {

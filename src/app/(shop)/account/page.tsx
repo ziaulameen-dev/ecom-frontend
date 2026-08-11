@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import { CreditCard, Headphones, LogOut, Tag, Truck } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -10,11 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useAuthModal, useLogout, useMe } from '@/features/auth';
 import {
   useAddresses,
   useCancelOrder,
+  useCoupons,
   useCreateAddress,
   useDeleteAddress,
   useMyOrders,
@@ -24,13 +28,14 @@ import {
 } from '@/features/account';
 import { AddressForm } from '@/features/account/components/address-form';
 import { ReturnForm } from '@/features/account/components/return-form';
-import type { AdminReturn, OrderStatus } from '@/lib/types';
+import type { ActiveCoupon, AdminReturn, OrderStatus, User } from '@/lib/types';
 import { cn, formatDate, money } from '@/lib/utils';
 
 const TABS = [
-  { key: 'profile', label: 'Profile' },
-  { key: 'orders', label: 'Orders' },
-  { key: 'addresses', label: 'Addresses' },
+  { key: 'profile', label: 'Personal Information' },
+  { key: 'orders', label: 'Manage Orders' },
+  { key: 'addresses', label: 'Manage Address' },
+  { key: 'coupons', label: 'Coupons' },
 ] as const;
 
 const statusVariant: Record<OrderStatus, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
@@ -44,6 +49,7 @@ function AccountInner() {
   const tab = (sp.get('tab') ?? 'profile') as (typeof TABS)[number]['key'];
   const { data: me, isLoading } = useMe();
   const openLogin = useAuthModal((s) => s.openLogin);
+  const logout = useLogout();
 
   useEffect(() => {
     if (!isLoading && !me) openLogin('/account');
@@ -58,45 +64,79 @@ function AccountInner() {
     );
   }
 
+  async function handleLogout() {
+    await logout.mutateAsync();
+    toast.success('Logged out');
+    router.push('/');
+  }
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
+    <div className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="text-2xl font-semibold">My account</h1>
       <div className="mt-6 flex flex-col gap-8 md:flex-row">
-        <nav className="flex gap-1 md:w-48 md:flex-col">
+        {/* Sidebar — vertical tab cards + logout */}
+        <nav className="flex flex-col gap-2.5 md:w-64">
           {TABS.map((t) => (
             <button
               key={t.key}
               onClick={() => router.push(`/account?tab=${t.key}`)}
               className={cn(
-                'rounded-md px-3 py-2 text-left text-sm hover:bg-accent',
-                tab === t.key && 'bg-accent font-medium',
+                'rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors',
+                tab === t.key
+                  ? 'border-brand bg-brand text-brand-foreground'
+                  : 'bg-card hover:bg-accent',
               )}
             >
               {t.label}
             </button>
           ))}
+          <button
+            onClick={handleLogout}
+            disabled={logout.isPending}
+            className="flex items-center gap-2 rounded-xl border bg-card px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
+          >
+            <LogOut className="size-4" /> Logout
+          </button>
         </nav>
 
         <div className="flex-1">
-          {tab === 'profile' && <ProfileTab email={me.email} name={me.name} />}
+          {tab === 'profile' && <PersonalInfoTab me={me} />}
           {tab === 'orders' && <OrdersTab />}
           {tab === 'addresses' && <AddressesTab />}
+          {tab === 'coupons' && <CouponsTab />}
         </div>
       </div>
+
+      <ValueProps />
     </div>
   );
 }
 
-function ProfileTab({ email, name }: { email: string; name: string | null }) {
+function Avatar({ name, email }: { name: string | null; email: string }) {
+  const initial = (name?.trim()?.[0] ?? email[0] ?? '?').toUpperCase();
+  return (
+    <div className="grid size-20 place-items-center rounded-full bg-brand/15 text-2xl font-semibold text-brand">
+      {initial}
+    </div>
+  );
+}
+
+function PersonalInfoTab({ me }: { me: User }) {
   const update = useUpdateProfile();
-  const logout = useLogout();
-  const router = useRouter();
-  const [form, setForm] = useState({ name: name ?? '', mobile: '' });
+  const [form, setForm] = useState({
+    name: me.name ?? '',
+    mobile: me.mobile ?? '',
+    gender: me.gender ?? '',
+  });
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await update.mutateAsync({ name: form.name || undefined, mobile: form.mobile || undefined });
+      await update.mutateAsync({
+        name: form.name || undefined,
+        mobile: form.mobile || undefined,
+        gender: form.gender || undefined,
+      });
       toast.success('Profile updated');
     } catch (err) {
       toast.error((err as Error).message);
@@ -105,32 +145,120 @@ function ProfileTab({ email, name }: { email: string; name: string | null }) {
 
   return (
     <Card>
-      <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
-      <CardContent>
-        <form onSubmit={save} className="max-w-md space-y-4">
-          <div className="space-y-1.5">
-            <Label>Email</Label>
-            <Input value={email} disabled />
+      <CardContent className="p-6">
+        <Avatar name={me.name} email={me.email} />
+        <form onSubmit={save} className="mt-6 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="name">Full name</Label>
+              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Email</Label>
+              <Input value={me.email} disabled />
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Name</Label>
-            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="mobile">Mobile <span className="text-muted-foreground">(optional)</span></Label>
+              <Input id="mobile" type="tel" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} placeholder="+91 98765 43210" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Gender</Label>
+              <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Select gender" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="mobile">Mobile</Label>
-            <Input id="mobile" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
-          </div>
-          <Button type="submit" disabled={update.isPending}>{update.isPending ? 'Saving…' : 'Save changes'}</Button>
+          <Button type="submit" disabled={update.isPending}>
+            {update.isPending ? 'Saving…' : 'Update changes'}
+          </Button>
         </form>
-        <Separator className="my-6" />
-        <Button
-          variant="outline"
-          onClick={async () => { await logout.mutateAsync(); router.push('/'); }}
-        >
-          <LogOut /> Log out
-        </Button>
       </CardContent>
     </Card>
+  );
+}
+
+function CouponsTab() {
+  const { data: coupons, isLoading } = useCoupons();
+
+  if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
+  if (!coupons?.length) {
+    return (
+      <Card>
+        <CardContent className="py-16 text-center">
+          <Tag className="mx-auto size-8 text-muted-foreground" />
+          <p className="mt-3 text-sm text-muted-foreground">No coupons available right now. Check back soon!</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {coupons.map((c) => <CouponCard key={c.code} coupon={c} />)}
+    </div>
+  );
+}
+
+function CouponCard({ coupon }: { coupon: ActiveCoupon }) {
+  const off = coupon.type === 'percent'
+    ? `${coupon.value}% OFF`
+    : `${money(coupon.value, 'INR')} OFF`;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed p-4">
+      <div className="min-w-0">
+        <div className="text-base font-semibold">{off}</div>
+        <div className="mt-0.5 font-mono text-sm">{coupon.code}</div>
+        <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+          {coupon.minSubtotalMinor > 0 && <div>Min. spend {money(coupon.minSubtotalMinor, 'INR')}</div>}
+          {coupon.type === 'percent' && coupon.maxDiscountMinor != null && (
+            <div>Up to {money(coupon.maxDiscountMinor, 'INR')} off</div>
+          )}
+          {coupon.expiresAt && <div>Expires {formatDate(coupon.expiresAt)}</div>}
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="shrink-0"
+        onClick={() => {
+          navigator.clipboard?.writeText(coupon.code);
+          toast.success(`Copied "${coupon.code}"`);
+        }}
+      >
+        Copy
+      </Button>
+    </div>
+  );
+}
+
+function ValueProps() {
+  const items = [
+    { icon: Truck, title: 'Free Shipping', desc: 'On orders above ₹500' },
+    { icon: CreditCard, title: 'Flexible Payment', desc: 'Multiple secure payment options' },
+    { icon: Headphones, title: '24×7 Support', desc: 'We support online all days' },
+  ];
+  return (
+    <div className="mt-16 grid gap-6 border-t pt-10 sm:grid-cols-3">
+      {items.map(({ icon: Icon, title, desc }) => (
+        <div key={title} className="flex items-center gap-3">
+          <div className="grid size-11 shrink-0 place-items-center rounded-full bg-brand/10 text-brand">
+            <Icon className="size-5" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold">{title}</div>
+            <div className="text-xs text-muted-foreground">{desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 

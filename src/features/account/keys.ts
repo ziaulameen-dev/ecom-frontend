@@ -4,4 +4,5 @@ export const accountKeys = {
   orders: ['orders'] as const,
   order: (id: string) => ['order', id] as const,
   returns: ['my-returns'] as const,
+  coupons: ['my-coupons'] as const,
 };

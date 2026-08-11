@@ -14,6 +14,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { authKeys } from '@/features/auth/keys';
 import { useRequestOtp } from '@/features/auth/hooks/use-request-otp';
 import { useVerifyOtp } from '@/features/auth/hooks/use-verify-otp';
@@ -35,7 +42,8 @@ export function LoginModal() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
-  // Only first-time accounts get the (optional) name field on the code step.
+  const [gender, setGender] = useState('');
+  // Only first-time accounts get the (optional) name/gender fields on the code step.
   const [isNewUser, setIsNewUser] = useState(false);
 
   // Handle the redirect back from Google (auth-service adds ?auth=…). On
@@ -68,7 +76,7 @@ export function LoginModal() {
   }, [qc]);
 
   function reset() {
-    setStep('email'); setEmail(''); setOtp(''); setName(''); setIsNewUser(false);
+    setStep('email'); setEmail(''); setOtp(''); setName(''); setGender(''); setIsNewUser(false);
   }
 
   function loginWithGoogle() {
@@ -94,7 +102,12 @@ export function LoginModal() {
   async function verify(e: React.SyntheticEvent) {
     e.preventDefault();
     try {
-      await verifyOtp.mutateAsync({ email: email.trim(), otp: otp.trim(), name: name.trim() || undefined });
+      await verifyOtp.mutateAsync({
+        email: email.trim(),
+        otp: otp.trim(),
+        name: name.trim() || undefined,
+        gender: gender || undefined,
+      });
       await api.post('/api/cart/merge').catch(() => {});
       cartId.clear();
       toast.success('Welcome!');
@@ -160,10 +173,24 @@ export function LoginModal() {
               <Input className="h-12" id="m-otp" inputMode="numeric" maxLength={6} required autoFocus placeholder="123456" value={otp} onChange={(e) => setOtp(e.target.value)} />
             </div>
             {isNewUser && (
-              <div className="flex flex-col gap-2.5">
-                <Label htmlFor="m-name">Name <span className="text-muted-foreground">(optional)</span></Label>
-                <Input className="h-12" id="m-name" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
+              <>
+                <div className="flex flex-col gap-2.5">
+                  <Label htmlFor="m-name">Name <span className="text-muted-foreground">(optional)</span></Label>
+                  <Input className="h-12" id="m-name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  <Label>Gender <span className="text-muted-foreground">(optional)</span></Label>
+                  <Select value={gender} onValueChange={setGender}>
+                    <SelectTrigger className="h-12"><SelectValue placeholder="Prefer not to say" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Helps us show you the most relevant products first.</p>
+                </div>
+              </>
             )}
             <Button type="submit" className="w-full h-12" disabled={verifyOtp.isPending}>
               {verifyOtp.isPending ? 'Verifying…' : 'Verify & continue'}
