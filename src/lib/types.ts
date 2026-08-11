@@ -166,6 +166,13 @@ export interface ReviewSummary {
   items: Review[];
 }
 
+/** A product the current customer can review (delivered, not yet reviewed). */
+export interface ReviewableProduct {
+  productId: string;
+  name: string;
+  variantLabel: string | null;
+}
+
 export interface CartLine {
   id: string;
   productId: string;

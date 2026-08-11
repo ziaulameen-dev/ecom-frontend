@@ -100,7 +100,7 @@ export function SiteHeader() {
             <Button variant="ghost" size="icon" className="size-9 rounded-full"><Heart /></Button>
             {mounted && wishCount > 0 && (
               <Badge
-                variant="brand"
+                variant="primary"
                 className="absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center px-1 text-[10px] tabular-nums"
               >
                 {wishCount}
@@ -111,7 +111,7 @@ export function SiteHeader() {
             <Button variant="ghost" size="icon" className="size-9 rounded-full"><ShoppingBag /></Button>
             {count > 0 && (
               <Badge
-                variant="brand"
+                variant="primary"
                 className="absolute -right-0.5 -top-0.5 h-4 min-w-4 justify-center px-1 text-[10px] tabular-nums"
               >
                 {count}

@@ -32,9 +32,15 @@ type Values = z.infer<typeof schema>;
 export function AddressForm({
   onSubmit,
   submitting,
+  defaultValues,
+  submitLabel = 'Save address',
+  onCancel,
 }: {
   onSubmit: (values: AddressInput) => void;
   submitting?: boolean;
+  defaultValues?: Partial<Values>;
+  submitLabel?: string;
+  onCancel?: () => void;
 }) {
   const {
     register,
@@ -42,7 +48,7 @@ export function AddressForm({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema) });
+  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues });
 
   const { lookupPincode } = usePincode();
   const [pincodeLoading, setPincodeLoading] = useState(false);
@@ -65,8 +71,13 @@ export function AddressForm({
         if (data) {
           if (data.city) setValue('city', data.city, { shouldValidate: true });
           if (data.state) setValue('state', data.state, { shouldValidate: true });
-          setAvailableOffices(data.offices ?? []);
+          const offices = data.offices ?? [];
+          setAvailableOffices(offices);
           setAutoFilledStatus(`${data.city}, ${data.state}`);
+          // Edit mode: pre-select the office already saved in the address line.
+          const line1 = watch('line1') || '';
+          const match = offices.find((o) => line1.includes(o));
+          if (match) setSelectedOffice(match);
         } else {
           setAvailableOffices([]);
           setAutoFilledStatus(null);
@@ -82,7 +93,7 @@ export function AddressForm({
       setAvailableOffices([]);
       setSelectedOffice('');
     }
-  }, [postalCode, lookupPincode, setValue]);
+  }, [postalCode, lookupPincode, setValue, watch]);
 
   /** Called when user selects an Area / Post Office from the Shadcn Select dropdown */
   function handleOfficeSelect(office: string) {
@@ -122,7 +133,7 @@ export function AddressForm({
         {autoFilledStatus && (
           <div className="mt-1 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
             <CheckCircle2 size={13} className="shrink-0" />
-            <span>Auto-filled: {autoFilledStatus}</span>
+            <span><span className="hidden sm:inline">Auto-filled: </span>{autoFilledStatus}</span>
           </div>
         )}
       </Field>
@@ -167,9 +178,14 @@ export function AddressForm({
         <Input {...register('state')} placeholder="State" />
       </Field>
 
-      <Button type="submit" className="col-span-2 mt-1" disabled={submitting}>
-        {submitting ? 'Saving…' : 'Save address'}
-      </Button>
+      <div className="col-span-2 mt-1 flex items-center gap-2">
+        <Button type="submit" variant="primary" className="w-fit" disabled={submitting}>
+          {submitting ? 'Saving…' : submitLabel}
+        </Button>
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+        )}
+      </div>
     </form>
   );
 }

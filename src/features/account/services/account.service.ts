@@ -1,7 +1,9 @@
 'use client';
 
 import { api } from '@/lib/api-client';
-import type { ActiveCoupon, AdminReturn, Address, Order, OrderItem, User } from '@/lib/types';
+import type {
+  ActiveCoupon, AdminReturn, Address, Order, OrderItem, Review, ReviewableProduct, User,
+} from '@/lib/types';
 import type { AddressInput } from '../types';
 
 /**
@@ -20,6 +22,11 @@ export function fetchAddresses() {
 /** Create a new address. */
 export function createAddress(input: AddressInput) {
   return api.post<Address>('/api/addresses', input);
+}
+
+/** Update an existing address. */
+export function updateAddress(id: string, input: AddressInput) {
+  return api.patch<Address>(`/api/addresses/${id}`, input);
 }
 
 /** Delete an address by id. */
@@ -82,4 +89,47 @@ export function updateProfile(input: { name?: string; mobile?: string; gender?: 
 /** List coupons the customer can currently use (for the account Coupons tab). */
 export function fetchActiveCoupons() {
   return api.get<ActiveCoupon[]>('/api/coupons');
+}
+
+// ---- Email change (3-step: verifies BOTH the old and new inbox) -----------
+
+interface EmailChallenge { step: string; sentTo: string; expiresInSeconds: number }
+
+/** Step 1: email an OTP to the CURRENT address. */
+export function requestEmailChange() {
+  return api.post<EmailChallenge>('/auth/email/change');
+}
+
+/** Step 2: confirm the old-email OTP + supply the new address (emails it a code). */
+export function verifyOldEmail(input: { newEmail: string; otp: string }) {
+  return api.post<EmailChallenge>('/auth/email/verify-old', input);
+}
+
+/** Step 3: confirm the new-email OTP; the address is switched and token re-issued. */
+export function verifyNewEmail(input: { otp: string }) {
+  return api.post<{ user: User; csrfToken?: string }>('/auth/email/verify-new', input);
+}
+
+// ---- Reviews (customer-authored, for delivered products) ------------------
+
+/** Products the customer can review (received, not yet reviewed). */
+export function fetchReviewable() {
+  return api.get<ReviewableProduct[]>('/api/reviews/reviewable');
+}
+
+/** Reviews the customer has written. */
+export function fetchMyReviews() {
+  return api.get<Review[]>('/api/reviews/mine');
+}
+
+/** Submit a review for a purchased+delivered product. */
+export function submitReview(input: {
+  productId: string;
+  rating: number;
+  title?: string;
+  body: string;
+  authorName?: string;
+  images?: string[];
+}) {
+  return api.post<Review>('/api/reviews/mine', input);
 }

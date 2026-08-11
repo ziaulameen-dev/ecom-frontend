@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { OtpInput } from '@/components/ui/otp-input';
 import {
   Select,
   SelectContent,
@@ -99,12 +100,12 @@ export function LoginModal() {
     }
   }
 
-  async function verify(e: React.SyntheticEvent) {
-    e.preventDefault();
+  async function submitOtp(code = otp) {
+    if (code.trim().length < 6 || verifyOtp.isPending) return;
     try {
       await verifyOtp.mutateAsync({
         email: email.trim(),
-        otp: otp.trim(),
+        otp: code.trim(),
         name: name.trim() || undefined,
         gender: gender || undefined,
       });
@@ -157,7 +158,7 @@ export function LoginModal() {
                 <Label htmlFor="m-email">Email</Label>
                 <Input className="h-12" id="m-email" type="email" required autoFocus placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
-              <Button type="submit" className="w-full h-12" disabled={requestOtp.isPending}>
+              <Button type="submit" variant="primary" className="w-full h-12" disabled={requestOtp.isPending}>
                 {requestOtp.isPending ? 'Sending…' : 'Send code'}
               </Button>
             </form>
@@ -167,10 +168,13 @@ export function LoginModal() {
             </p>
           </div>
         ) : (
-          <form onSubmit={verify} className="space-y-4">
-            <div className="flex flex-col gap-2.5">
-              <Label htmlFor="m-otp">6-digit code</Label>
-              <Input className="h-12" id="m-otp" inputMode="numeric" maxLength={6} required autoFocus placeholder="123456" value={otp} onChange={(e) => setOtp(e.target.value)} />
+          <form onSubmit={(e) => { e.preventDefault(); submitOtp(); }} className="space-y-4">
+            <div className="flex flex-col items-center gap-2.5">
+              <OtpInput
+                value={otp}
+                onChange={setOtp}
+                onComplete={(code) => { if (!isNewUser) submitOtp(code); }}
+              />
             </div>
             {isNewUser && (
               <>
@@ -192,7 +196,7 @@ export function LoginModal() {
                 </div>
               </>
             )}
-            <Button type="submit" className="w-full h-12" disabled={verifyOtp.isPending}>
+            <Button type="submit" variant="primary" className="w-full h-12" disabled={verifyOtp.isPending || otp.trim().length < 6}>
               {verifyOtp.isPending ? 'Verifying…' : 'Verify & continue'}
             </Button>
             <button type="button" onClick={() => setStep('email')} className="w-full text-center text-xs text-muted-foreground hover:text-foreground">

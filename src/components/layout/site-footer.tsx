@@ -67,7 +67,7 @@ export function SiteFooter() {
               <button
                 type="submit"
                 disabled={busy}
-                className="h-11 shrink-0 bg-primary px-6 text-[11px] font-medium uppercase tracking-widest text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="h-11 shrink-0 bg-primary-button text-white px-6 text-[11px] font-medium uppercase tracking-widest transition-opacity hover:opacity-90 disabled:opacity-60"
               >
                 {busy ? 'Joining…' : 'Subscribe'}
               </button>

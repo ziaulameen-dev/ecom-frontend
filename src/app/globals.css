@@ -33,6 +33,9 @@
   --primary: oklch(0.2 0 0);
   --primary-foreground: oklch(0.985 0 0);
 
+  /* Accent for primary CTAs / active states / count badges (#e84800). */
+  --primary-button: #e84800;
+
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.2 0 0);
 
@@ -76,6 +79,7 @@
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.2 0 0);
+  --primary-button: #e84800;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -111,6 +115,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-button: var(--primary-button);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
