@@ -50,39 +50,56 @@ export default function CartPage() {
         <div className="space-y-3">
           {cart.items.map((it) => (
             <Card key={it.id}>
-              <CardContent className="flex items-center gap-4 p-4">
+              <CardContent className="relative flex gap-3 p-3 sm:gap-4 sm:p-4">
+                {/* Remove — pinned to the card's top-right corner. */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Remove item"
+                  className="absolute right-1 top-1 size-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => remove.mutate(it.id)}
+                >
+                  <Trash2 />
+                </Button>
+
                 <div className="relative size-20 shrink-0 overflow-hidden rounded-lg border bg-muted">
                   {it.imageUrl && <Image src={mediaSrc(it.imageUrl)} alt={it.name} fill className="object-cover" sizes="80px" />}
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{it.name}</div>
-                  {it.label && <div className="text-xs text-muted-foreground">{it.label}</div>}
-                  <div className="mt-1 flex items-center gap-1.5 text-sm">
-                    <span className={it.compareAtMinor ? 'font-medium text-foreground' : 'text-muted-foreground'}>
-                      {money(it.unitAmountMinor, cart.currency)}
-                    </span>
-                    {it.compareAtMinor && (
-                      <span className="text-xs text-muted-foreground line-through">
-                        {money(it.compareAtMinor, cart.currency)}
+
+                {/* Details + controls: stacked on mobile, single row from sm up. */}
+                <div className="flex min-w-0 flex-1 flex-col gap-3 pr-6 sm:flex-row sm:items-center sm:gap-4 sm:pr-8">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{it.name}</div>
+                    {it.label && <div className="text-xs text-muted-foreground">{it.label}</div>}
+                    <div className="mt-1 flex items-center gap-1.5 text-sm">
+                      <span className={it.compareAtMinor ? 'font-medium text-foreground' : 'text-muted-foreground'}>
+                        {money(it.unitAmountMinor, cart.currency)}
                       </span>
-                    )}
-                  </div>
-                  {!it.available && <div className="text-xs text-destructive">Unavailable</div>}
-                </div>
-                <div className="flex items-center rounded-md border">
-                  <Button variant="ghost" size="icon" className="size-8" onClick={() => update.mutate({ itemId: it.id, quantity: it.quantity - 1 })}><Minus /></Button>
-                  <span className="w-8 text-center text-sm tabular-nums">{it.quantity}</span>
-                  <Button variant="ghost" size="icon" className="size-8" disabled={it.quantity >= it.stock} onClick={() => update.mutate({ itemId: it.id, quantity: it.quantity + 1 })}><Plus /></Button>
-                </div>
-                <div className="w-20 text-right">
-                  <div className="font-medium">{money(it.lineTotalMinor, cart.currency)}</div>
-                  {it.compareAtMinor && (
-                    <div className="text-xs text-muted-foreground line-through">
-                      {money(it.compareAtMinor * it.quantity, cart.currency)}
+                      {it.compareAtMinor && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          {money(it.compareAtMinor, cart.currency)}
+                        </span>
+                      )}
                     </div>
-                  )}
+                    {!it.available && <div className="text-xs text-destructive">Unavailable</div>}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 sm:justify-end sm:gap-4">
+                    <div className="flex items-center rounded-md border">
+                      <Button variant="ghost" size="icon" className="size-8" onClick={() => update.mutate({ itemId: it.id, quantity: it.quantity - 1 })}><Minus /></Button>
+                      <span className="w-8 text-center text-sm tabular-nums">{it.quantity}</span>
+                      <Button variant="ghost" size="icon" className="size-8" disabled={it.quantity >= it.stock} onClick={() => update.mutate({ itemId: it.id, quantity: it.quantity + 1 })}><Plus /></Button>
+                    </div>
+                    <div className="w-20 text-right sm:w-24">
+                      <div className="font-medium">{money(it.lineTotalMinor, cart.currency)}</div>
+                      {it.compareAtMinor && (
+                        <div className="text-xs text-muted-foreground line-through">
+                          {money(it.compareAtMinor * it.quantity, cart.currency)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => remove.mutate(it.id)}><Trash2 /></Button>
               </CardContent>
             </Card>
           ))}
@@ -90,16 +107,18 @@ export default function CartPage() {
 
         <Card className="h-fit lg:sticky lg:top-20">
           <CardContent className="space-y-4 p-6">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="font-medium">{money(cart.subtotalMinor, cart.currency)}</span>
-            </div>
-            {savingsMinor > 0 && (
-              <div className="flex justify-between text-sm text-brand">
-                <span>You save</span>
-                <span className="font-medium">−{money(savingsMinor, cart.currency)}</span>
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-medium">{money(cart.subtotalMinor, cart.currency)}</span>
               </div>
-            )}
+              {savingsMinor > 0 && (
+                <div className="flex justify-between text-sm text-brand">
+                  <span>You save</span>
+                  <span className="font-medium">−{money(savingsMinor, cart.currency)}</span>
+                </div>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">Shipping, tax & discounts calculated at checkout.</p>
             <Separator />
             {me ? (

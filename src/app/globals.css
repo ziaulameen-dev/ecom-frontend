@@ -184,3 +184,106 @@
     cursor: pointer;
   }
 }
+
+/* ─── Pincode & Area autocomplete component ────────────────────────────── */
+.pincode-autocomplete {
+  position: relative;
+  width: 100%;
+}
+
+.pincode-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.pincode-icon-left {
+  position: absolute;
+  left: 0.65rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pincode-icon-right {
+  position: absolute;
+  right: 0.65rem;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+
+.pincode-spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pincode-search-input {
+  padding-left: 2.2rem !important;
+  padding-right: 2rem !important;
+}
+
+.pincode-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: 0 8px 24px oklch(0 0 0 / 10%);
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.pincode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: calc(var(--radius) - 4px);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.pincode-option:hover {
+  background: var(--accent);
+}
+
+.pincode-option-icon {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--muted-foreground);
+}
+
+.pincode-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.pincode-option-main {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pincode-option-secondary {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+

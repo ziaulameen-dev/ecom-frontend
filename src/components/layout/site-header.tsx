@@ -122,7 +122,7 @@ export function SiteHeader() {
             <Link href="/admin" className={`${pill} ml-1 hidden md:inline-flex`}>Admin</Link>
           )}
           {!me && (
-            <button type="button" onClick={() => openLogin()} className={`${pill} ml-1 hidden sm:inline-flex`}>
+            <button type="button" onClick={() => openLogin()} className={`${pill} ml-1 hidden lg:inline-flex`}>
               Login
             </button>
           )}

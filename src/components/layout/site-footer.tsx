@@ -62,7 +62,7 @@ export function SiteFooter() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your e-mail address"
                 aria-label="Email address"
-                className="h-11 w-full border bg-transparent px-4 text-[11px] uppercase tracking-widest outline-none placeholder:text-muted-foreground focus:border-foreground/40"
+                className="h-11 w-full border bg-transparent px-4 text-[11px] tracking-widest outline-none placeholder:text-muted-foreground placeholder:uppercase focus:border-foreground/40"
               />
               <button
                 type="submit"
