@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { AdminProduct, MediaItem } from '@/lib/types';
@@ -42,7 +43,10 @@ export function ProductForm({ mode, product }: Props) {
 
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
+  const [shortDescription, setShortDescription] = useState(product?.shortDescription ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
+  const [additionalInfo, setAdditionalInfo] = useState(product?.additionalInfo ?? '');
+  const [tags, setTags] = useState((product?.tags ?? []).join(', '));
   const [categoryId, setCategoryId] = useState(product?.categoryId ?? '');
   const [stock, setStock] = useState(String(product?.stock ?? 0));
   const [price, setPrice] = useState(product ? toRupees(product.priceMinor) : '');
@@ -78,7 +82,10 @@ export function ProductForm({ mode, product }: Props) {
           : toPaise(offerPrice),
       stock: hasVariants ? 0 : Number(stock) || 0,
       categoryId: categoryId || undefined,
+      shortDescription: shortDescription.trim() || undefined,
       description: description.trim() || undefined,
+      additionalInfo: additionalInfo.trim() || undefined,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       media,
       active,
     };
@@ -141,8 +148,23 @@ export function ProductForm({ mode, product }: Props) {
                 <Input id="p-slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={name ? slugify(name) : 'auto-generated'} />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="p-desc">Business Description</Label>
-                <Textarea id="p-desc" rows={5} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the product…" />
+                <Label htmlFor="p-short">Short description <span className="text-muted-foreground">(teaser near the top)</span></Label>
+                <Textarea id="p-short" rows={2} value={shortDescription} onChange={(e) => setShortDescription(e.target.value)} placeholder="A one or two line summary…" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Description</Label>
+                <RichTextEditor value={description} onChange={setDescription} placeholder="Describe the product…" />
+                <p className="text-xs text-muted-foreground">
+                  Tip: use variables like <code>{'{color}'}</code> or <code>{'{size}'}</code> — they’re replaced with the shopper’s selected variant, so one description works for every variant.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label>Additional information</Label>
+                <RichTextEditor value={additionalInfo} onChange={setAdditionalInfo} placeholder="Materials, care, specs…" />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="p-tags">Tags <span className="text-muted-foreground">(comma separated)</span></Label>
+                <Input id="p-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="serum, vegan, cruelty-free" />
               </div>
             </CardContent>
           </Card>

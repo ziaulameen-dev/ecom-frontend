@@ -135,7 +135,10 @@ export interface ProductDetail {
   id: string;
   name: string;
   slug: string | null;
+  shortDescription: string | null;
   description: string | null;
+  additionalInfo: string | null;
+  tags: string[];
   imageUrl: string | null;
   categoryId: string | null;
   category: string | null;
@@ -257,7 +260,10 @@ export interface AdminProduct {
   id: string;
   name: string;
   slug: string | null;
+  shortDescription: string | null;
   description: string | null;
+  additionalInfo: string | null;
+  tags: string[];
   imageUrl: string | null;
   category: string | null;
   categoryId: string | null;
