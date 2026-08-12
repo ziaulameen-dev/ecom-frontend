@@ -209,7 +209,7 @@ export interface User {
 
 // ---- Referral / affiliate --------------------------------------------------
 
-export type ReferralStatus = 'pending' | 'confirmed' | 'void';
+export type ReferralStatus = 'pending' | 'confirmed' | 'matured' | 'void';
 export type PayoutStatus = 'requested' | 'approved' | 'rejected' | 'paid';
 
 export interface ReferralItem {
@@ -217,6 +217,7 @@ export interface ReferralItem {
   orderReference: string | null;
   commissionMinor: number;
   status: ReferralStatus;
+  maturesAt: string | null;
   createdAt: string;
 }
 export type PayoutMethod = 'upi' | 'bank';
@@ -252,6 +253,8 @@ export interface ReferralSummary {
   availableMinor: number;
   unlocked: boolean;
   verifyEnabled: boolean;
+  returnDays: number;
+  maturingMinor: number;
   pendingCount: number;
   confirmedCount: number;
   totalEarnedMinor: number;

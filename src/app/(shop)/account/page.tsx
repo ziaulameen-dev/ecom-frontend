@@ -491,13 +491,13 @@ function ReferralTab() {
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Total balance" value={rupees(data.balanceMinor)} note={`${rupees(data.totalEarnedMinor)} earned`} />
+        <StatCard label="Available balance" value={rupees(data.balanceMinor)} note={data.maturingMinor > 0 ? `${rupees(data.maturingMinor)} maturing after the ${data.returnDays}-day return window` : `${rupees(data.totalEarnedMinor)} earned`} />
         <StatCard
-          label={data.unlocked ? 'Available' : 'Locked'}
+          label={data.unlocked ? 'Withdrawable' : 'Locked'}
           value={data.unlocked ? rupees(data.availableMinor) : rupees(data.balanceMinor)}
           note={data.unlocked ? 'Spend at checkout or withdraw' : `${remaining} more referral${remaining === 1 ? '' : 's'} to unlock`}
         />
-        <StatCard label="Confirmed referrals" value={String(data.confirmedCount)} note={`${data.pendingCount} pending`} />
+        <StatCard label="Referrals" value={String(data.confirmedCount)} note={`${data.pendingCount} pending`} />
       </div>
 
       {data.unlocked && data.availableMinor >= data.minPayoutMinor && (
@@ -515,11 +515,15 @@ function ReferralTab() {
                 <div key={r.id} className="flex items-center justify-between py-2.5">
                   <div>
                     <div className="font-mono">{r.orderReference ?? 'Order'}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {r.status === 'confirmed' && r.maturesAt ? `Matures ${formatDate(r.maturesAt)}` : formatDate(r.createdAt)}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{rupees(r.commissionMinor)}</span>
-                    <Badge variant={r.status === 'confirmed' ? 'success' : r.status === 'void' ? 'destructive' : 'secondary'}>{r.status}</Badge>
+                    <Badge variant={r.status === 'matured' ? 'success' : r.status === 'void' ? 'destructive' : 'secondary'}>
+                      {r.status === 'confirmed' ? 'held' : r.status}
+                    </Badge>
                   </div>
                 </div>
               ))}

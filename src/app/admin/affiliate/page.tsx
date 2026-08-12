@@ -18,7 +18,7 @@ import type { PayoutStatus, ReferralStatus } from '@/lib/types';
 import { formatDate, money } from '@/lib/utils';
 
 const refBadge: Record<ReferralStatus, 'secondary' | 'success' | 'destructive'> = {
-  pending: 'secondary', confirmed: 'success', void: 'destructive',
+  pending: 'secondary', confirmed: 'secondary', matured: 'success', void: 'destructive',
 };
 const payBadge: Record<PayoutStatus, 'secondary' | 'success' | 'destructive' | 'default'> = {
   requested: 'secondary', approved: 'default', paid: 'success', rejected: 'destructive',
