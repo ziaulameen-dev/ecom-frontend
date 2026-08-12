@@ -251,6 +251,7 @@ export interface ReferralSummary {
   balanceMinor: number;
   availableMinor: number;
   unlocked: boolean;
+  verifyEnabled: boolean;
   pendingCount: number;
   confirmedCount: number;
   totalEarnedMinor: number;

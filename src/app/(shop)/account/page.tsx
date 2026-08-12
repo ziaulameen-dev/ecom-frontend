@@ -501,7 +501,7 @@ function ReferralTab() {
       </div>
 
       {data.unlocked && data.availableMinor >= data.minPayoutMinor && (
-        <PayoutForm minPayoutMinor={data.minPayoutMinor} availableMinor={data.availableMinor} />
+        <PayoutForm minPayoutMinor={data.minPayoutMinor} availableMinor={data.availableMinor} verifyEnabled={data.verifyEnabled} />
       )}
 
       <Card>
@@ -553,7 +553,7 @@ function ReferralTab() {
   );
 }
 
-function PayoutForm({ minPayoutMinor, availableMinor }: { minPayoutMinor: number; availableMinor: number }) {
+function PayoutForm({ minPayoutMinor, availableMinor, verifyEnabled }: { minPayoutMinor: number; availableMinor: number; verifyEnabled: boolean }) {
   const payout = useRequestPayout();
   const verify = useVerifyAccount();
   const [amount, setAmount] = useState('');
@@ -635,7 +635,9 @@ function PayoutForm({ minPayoutMinor, availableMinor }: { minPayoutMinor: number
         )}
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onVerify} disabled={!filled || verify.isPending}>{verify.isPending ? 'Verifying…' : 'Verify account'}</Button>
+          {verifyEnabled && (
+            <Button variant="outline" onClick={onVerify} disabled={!filled || verify.isPending}>{verify.isPending ? 'Verifying…' : 'Verify account'}</Button>
+          )}
           <Button variant="primary" onClick={submit} disabled={payout.isPending}>{payout.isPending ? 'Requesting…' : 'Request payout'}</Button>
         </div>
       </CardContent>
