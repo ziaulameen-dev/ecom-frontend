@@ -3,6 +3,35 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Dual-thumb price range: two native range inputs overlaid. Tracks are
+ * transparent + click-through; only the thumbs receive pointer events. */
+.range-slider input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: none;
+  background: transparent;
+}
+.range-slider input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  pointer-events: auto;
+  height: 16px;
+  width: 16px;
+  border-radius: 9999px;
+  background: var(--primary-button);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+.range-slider input[type='range']::-moz-range-thumb {
+  pointer-events: auto;
+  height: 16px;
+  width: 16px;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: var(--primary-button);
+  cursor: pointer;
+}
+
 /* Announcement bar marquee — the track holds two identical halves, so a −50%
  * shift loops seamlessly. */
 @keyframes marquee {

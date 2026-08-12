@@ -30,13 +30,6 @@ const pill =
 const navText =
   'inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground';
 
-// Extra category pills requested for the second layer (linked by slug; the shop
-// falls back to "all products" until these categories exist in the catalog).
-const STATIC_PILLS: [string, string][] = [
-  ['Men', '/shop?category=men'],
-  ['Women', '/shop?category=women'],
-];
-
 export function SiteHeader() {
   const { data: cart } = useCart();
   const { data: me } = useMe();
@@ -51,6 +44,18 @@ export function SiteHeader() {
   const tops = tree ?? [];
   useWishlistSync(); // sync the wishlist with the server for logged-in users
 
+  // Cross-category groups for the second-layer pills: the distinct subcategory
+  // names (e.g. Men / Women / Unisex). Fully dynamic — new subcategories added
+  // in the admin panel appear here automatically. Clicking one selects every
+  // category with that name on the shop page.
+  const groupNames: string[] = [];
+  const seenGroups = new Set<string>();
+  for (const top of tops) {
+    for (const child of top.children ?? []) {
+      if (!seenGroups.has(child.name)) { seenGroups.add(child.name); groupNames.push(child.name); }
+    }
+  }
+
   function search(e: React.FormEvent) {
     e.preventDefault();
     setSearchOpen(false);
@@ -63,7 +68,7 @@ export function SiteHeader() {
       <div className="mx-auto grid h-12 max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-3 xl:px-0">
         {/* Desktop: inline search field (col 1). Hidden below sm so the brand
             can take the left slot there. */}
-        <form onSubmit={search} className="relative col-start-1 hidden w-54 justify-self-start sm:block">
+        <form onSubmit={search} className="relative col-start-1 hidden w-52 lg:w-66 justify-self-start sm:block">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={q}
@@ -151,14 +156,14 @@ export function SiteHeader() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {STATIC_PILLS.map(([label, href]) => (
-            <Link key={label} href={href} className={navText}>{label}</Link>
+          {tops.slice(0, 4).map((c) => (
+            <Link key={c.id} href={`/shop?category=${c.slug}`} className={navText}>{c.name}</Link>
           ))}
         </div>
 
         <div className="flex shrink-0 items-center gap-5">
-          {tops.slice(0, 4).map((c) => (
-            <Link key={c.id} href={`/shop?category=${c.slug}`} className={navText}>{c.name}</Link>
+          {groupNames.map((name) => (
+            <Link key={name} href={`/shop?category=${encodeURIComponent(name)}`} className={navText}>{name}</Link>
           ))}
         </div>
       </div>
