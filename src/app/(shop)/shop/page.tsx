@@ -4,6 +4,7 @@ import * as Sheet from '@radix-ui/react-dialog';
 import { Check, ChevronDown, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useMemo, useState } from 'react';
+import { ValueProps } from '@/components/value-props';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategoryTree, useProducts } from '@/features/catalog';
@@ -228,6 +229,8 @@ function ShopInner() {
           </div>
         </div>
       </div>
+
+      <ValueProps className="mt-12" />
 
       {/* Mobile filter — bottom sheet that slides up */}
       <Sheet.Root open={mobileOpen} onOpenChange={setMobileOpen}>

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { ValueProps } from '@/components/value-props';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProduct } from '@/features/catalog';
@@ -134,6 +135,8 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
       </div>
 
       <ReviewsSection productId={product.id} />
+
+      <ValueProps className="mt-16" />
     </div>
   );
 }

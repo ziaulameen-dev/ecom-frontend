@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  ChevronRight, CreditCard, Headphones, ImagePlus, LifeBuoy, LogOut, Mail,
-  MapPin, Package, Star, Tag, Truck, User as UserIcon, X,
+  ChevronRight, ImagePlus, LifeBuoy, LogOut, Mail,
+  MapPin, Package, Star, Tag, User as UserIcon, X,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { AuthImage } from '@/components/auth-image';
 import { confirm } from '@/components/confirm-dialog';
 import { RatingStars } from '@/components/rating-stars';
+import { ValueProps } from '@/components/value-props';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -158,7 +159,7 @@ function AccountInner() {
         )}
       </div>
 
-      <ValueProps />
+      <ValueProps className="mt-12 sm:mt-16" />
     </div>
   );
 }
@@ -635,29 +636,6 @@ function HelpCenterTab() {
   );
 }
 
-function ValueProps() {
-  const items = [
-    { icon: Truck, title: 'Free Shipping', desc: 'On orders above ₹500' },
-    { icon: CreditCard, title: 'Flexible Payment', desc: 'Multiple secure payment options' },
-    { icon: Headphones, title: '24×7 Support', desc: 'We support online all days' },
-  ];
-  return (
-    <div className="mt-12 grid grid-cols-1 gap-5 rounded-sm border p-6 sm:mt-16 sm:grid-cols-3 sm:gap-6 sm:p-8">
-      {items.map(({ icon: Icon, title, desc }) => (
-        <div key={title} className="flex items-center gap-3 sm:justify-center">
-          <div className="relative grid shrink-0 place-items-center text-ink">
-            <Icon className="z-2 size-10" strokeWidth={1.2} />
-            <div className="z-1 size-8 absolute bottom-0 right-0 rounded-full bg-gradient-to-br from-brand/50 to-brand/10" />
-          </div>
-          <div>
-            <div className="text-sm font-semibold">{title}</div>
-            <div className="text-xs text-muted-foreground">{desc}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 // Returns are a post-delivery action; before that the customer can only cancel.
 const RETURNABLE = ['delivered'];

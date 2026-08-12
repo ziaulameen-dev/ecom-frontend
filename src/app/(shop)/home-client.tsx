@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
+import { ValueProps } from '@/components/value-props';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCategoryTree, useContent, useHero, useProducts } from '@/features/catalog';
 import { CategoryCard } from '@/features/catalog/components/category-card';
@@ -99,6 +100,11 @@ export function HomeClient() {
       <section className="mx-auto mt-16 max-w-7xl px-4">
         <SectionHead title="New arrivals" href="/shop?sort=new" />
         <ProductRow items={newArrivals} loading={isLoading} />
+      </section>
+
+      {/* Trust / value-props band */}
+      <section className="mx-auto mt-16 max-w-7xl px-4">
+        <ValueProps />
       </section>
 
       {/* FAQ — admin-managed, shown only when questions exist */}
