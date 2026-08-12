@@ -12,7 +12,12 @@ export function validateCoupon(input: { code: string; subtotalMinor: number }) {
   return api.post<CouponResult>('/api/coupons/validate', input);
 }
 
-/** Place the order for the given address and optional coupon. */
-export function checkout(input: { addressId: string; couponCode?: string }) {
+/** Place the order for the given address, optional coupon, referral + wallet. */
+export function checkout(input: {
+  addressId: string;
+  couponCode?: string;
+  referralCode?: string;
+  useWallet?: boolean;
+}) {
   return api.post<CheckoutResult>('/api/checkout', input);
 }

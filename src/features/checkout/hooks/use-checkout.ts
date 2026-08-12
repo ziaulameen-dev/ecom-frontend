@@ -12,7 +12,7 @@ export function useValidateCoupon() {
 
 export function useCheckout() {
   return useMutation({
-    mutationFn: (input: { addressId: string; couponCode?: string }) =>
+    mutationFn: (input: { addressId: string; couponCode?: string; referralCode?: string; useWallet?: boolean }) =>
       checkout(input),
   });
 }

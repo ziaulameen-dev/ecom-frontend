@@ -8,7 +8,12 @@
  * keep client-side is the guest-cart id and a reader for the readable CSRF
  * cookie (echoed in X-CSRF-Token on state-changing requests).
  */
-const CART = 'sbaz_cart_id';
+import { STORE_NAME } from './config';
+
+// Storage-key prefix derived from the configured store name (env-driven, no
+// hardcoded brand). e.g. STORE_NAME "SBAZWIDE" → "sbazwide_cart_id".
+const PREFIX = STORE_NAME.toLowerCase().replace(/[^a-z0-9]/g, '') || 'store';
+const CART = `${PREFIX}_cart_id`;
 
 const canUse = () => typeof window !== 'undefined';
 
@@ -27,4 +32,26 @@ export const cartId = {
     if (canUse() && id) localStorage.setItem(CART, id);
   },
   clear: () => canUse() && localStorage.removeItem(CART),
+};
+
+// Referral attribution — last-touch, kept for 30 days.
+const REF = `${PREFIX}_ref`;
+const REF_TTL = 30 * 24 * 3600 * 1000;
+export const referral = {
+  get(): string | null {
+    if (!canUse()) return null;
+    try {
+      const raw = localStorage.getItem(REF);
+      if (!raw) return null;
+      const { code, ts } = JSON.parse(raw) as { code: string; ts: number };
+      if (!code || Date.now() - ts > REF_TTL) { localStorage.removeItem(REF); return null; }
+      return code;
+    } catch {
+      return null;
+    }
+  },
+  set(code: string) {
+    if (canUse() && code) localStorage.setItem(REF, JSON.stringify({ code: code.toUpperCase(), ts: Date.now() }));
+  },
+  clear: () => canUse() && localStorage.removeItem(REF),
 };

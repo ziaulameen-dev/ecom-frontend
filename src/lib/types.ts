@@ -207,6 +207,64 @@ export interface User {
   roles: string[];
 }
 
+// ---- Referral / affiliate --------------------------------------------------
+
+export type ReferralStatus = 'pending' | 'confirmed' | 'void';
+export type PayoutStatus = 'requested' | 'approved' | 'rejected' | 'paid';
+
+export interface ReferralItem {
+  id: string;
+  orderReference: string | null;
+  commissionMinor: number;
+  status: ReferralStatus;
+  createdAt: string;
+}
+export interface ReferralPayout {
+  id: string;
+  amountMinor: number;
+  status: PayoutStatus;
+  createdAt: string;
+}
+export interface ReferralSummary {
+  code: string;
+  commissionMinor: number;
+  unlockThreshold: number;
+  minPayoutMinor: number;
+  balanceMinor: number;
+  availableMinor: number;
+  unlocked: boolean;
+  pendingCount: number;
+  confirmedCount: number;
+  totalEarnedMinor: number;
+  referrals: ReferralItem[];
+  payouts: ReferralPayout[];
+}
+export interface AffiliateSettings {
+  id: string;
+  commissionMinor: number;
+  unlockThreshold: number;
+  minPayoutMinor: number;
+}
+export interface AdminReferral {
+  id: string;
+  referrerUserId: string;
+  buyerUserId: string;
+  orderId: string;
+  orderReference: string | null;
+  commissionMinor: number;
+  status: ReferralStatus;
+  createdAt: string;
+}
+export interface AdminPayout {
+  id: string;
+  userId: string;
+  userEmail: string | null;
+  amountMinor: number;
+  status: PayoutStatus;
+  note: string | null;
+  createdAt: string;
+}
+
 /** Customer-facing coupon (from GET /api/coupons — currently usable codes). */
 export interface ActiveCoupon {
   code: string;

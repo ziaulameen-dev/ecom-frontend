@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  BadgePercent, Boxes, LayoutDashboard, ListTree, Menu, PackageSearch,
+  BadgePercent, Boxes, Gift, LayoutDashboard, ListTree, Menu, PackageSearch,
   ShoppingCart, Star, Undo2, Settings, Store, Users, X,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -21,6 +21,7 @@ const NAV = [
   { href: '/admin/attributes', label: 'Attributes', icon: Boxes },
   { href: '/admin/returns', label: 'Returns', icon: Undo2 },
   { href: '/admin/coupons', label: 'Coupons', icon: BadgePercent },
+  { href: '/admin/affiliate', label: 'Affiliate', icon: Gift },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
   { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/settings', label: 'Settings', icon: Settings },

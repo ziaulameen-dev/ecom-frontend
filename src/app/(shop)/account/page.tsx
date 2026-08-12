@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  ChevronRight, ImagePlus, LifeBuoy, LogOut, Mail,
+  ChevronRight, Gift, ImagePlus, LifeBuoy, LogOut, Mail,
   MapPin, Package, Star, Tag, User as UserIcon, X,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -39,7 +39,9 @@ import {
   useMyOrders,
   useMyReviews,
   useMyReturns,
+  useReferral,
   useRequestEmailChange,
+  useRequestPayout,
   useReviewable,
   useSubmitReview,
   useUpdateProfile,
@@ -57,6 +59,7 @@ const TABS = [
   { key: 'orders', label: 'Manage Orders', icon: Package },
   { key: 'addresses', label: 'Manage Address', icon: MapPin },
   { key: 'coupons', label: 'Coupons', icon: Tag },
+  { key: 'referral', label: 'Refer & Earn', icon: Gift },
   { key: 'reviews', label: 'Reviews', icon: Star },
   { key: 'help', label: 'Help Center', icon: LifeBuoy },
 ] as const;
@@ -102,6 +105,7 @@ function AccountInner() {
       case 'orders': return <OrdersTab />;
       case 'addresses': return <AddressesTab />;
       case 'coupons': return <CouponsTab />;
+      case 'referral': return <ReferralTab />;
       case 'reviews': return <ReviewsTab authorName={me!.name} />;
       case 'help': return <HelpCenterTab />;
     }
@@ -443,6 +447,124 @@ function CouponCard({ coupon }: { coupon: ActiveCoupon }) {
       >
         Copy
       </Button>
+    </div>
+  );
+}
+
+function StatCard({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="mt-1 text-xl font-semibold">{value}</div>
+      {note && <div className="mt-0.5 text-xs text-muted-foreground">{note}</div>}
+    </div>
+  );
+}
+
+function ReferralTab() {
+  const { data, isLoading } = useReferral();
+  const payout = useRequestPayout();
+  const [amount, setAmount] = useState('');
+
+  if (isLoading || !data) return <p className="text-muted-foreground">Loading…</p>;
+
+  const rupees = (m: number) => `₹${(m / 100).toFixed(0)}`;
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const link = `${origin}/?ref=${data.code}`;
+  const remaining = Math.max(0, data.unlockThreshold - data.confirmedCount);
+
+  async function submitPayout() {
+    const paise = Math.round(Number(amount) * 100);
+    if (!paise || paise <= 0) { toast.error('Enter an amount'); return; }
+    try {
+      await payout.mutateAsync({ amountMinor: paise });
+      toast.success('Payout requested');
+      setAmount('');
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-sm text-muted-foreground">Your referral code</div>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="rounded-md border border-dashed px-3 py-1.5 font-mono text-lg font-semibold tracking-widest">{data.code}</span>
+            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard?.writeText(data.code); toast.success('Code copied'); }}>Copy code</Button>
+            <Button variant="primary" size="sm" onClick={() => { navigator.clipboard?.writeText(link); toast.success('Share link copied'); }}>Copy share link</Button>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Share your link and earn <span className="font-medium text-foreground">{rupees(data.commissionMinor)}</span> for every order your friends place.
+            {!data.unlocked && ` Unlock your balance after ${data.unlockThreshold} confirmed referrals.`}
+          </p>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard label="Total balance" value={rupees(data.balanceMinor)} note={`${rupees(data.totalEarnedMinor)} earned`} />
+        <StatCard
+          label={data.unlocked ? 'Available' : 'Locked'}
+          value={data.unlocked ? rupees(data.availableMinor) : rupees(data.balanceMinor)}
+          note={data.unlocked ? 'Spend at checkout or withdraw' : `${remaining} more referral${remaining === 1 ? '' : 's'} to unlock`}
+        />
+        <StatCard label="Confirmed referrals" value={String(data.confirmedCount)} note={`${data.pendingCount} pending`} />
+      </div>
+
+      {data.unlocked && data.availableMinor >= data.minPayoutMinor && (
+        <Card>
+          <CardHeader><CardTitle>Request a payout</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">Minimum {rupees(data.minPayoutMinor)}. You can also spend your balance at checkout.</p>
+            <div className="flex gap-2">
+              <Input type="number" placeholder={`Amount (max ${rupees(data.availableMinor)})`} value={amount} onChange={(e) => setAmount(e.target.value)} className="max-w-52" />
+              <Button variant="primary" onClick={submitPayout} disabled={payout.isPending}>{payout.isPending ? 'Requesting…' : 'Request payout'}</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader><CardTitle>Your referrals</CardTitle></CardHeader>
+        <CardContent>
+          {data.referrals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No referrals yet — share your link to start earning.</p>
+          ) : (
+            <div className="divide-y text-sm">
+              {data.referrals.map((r) => (
+                <div key={r.id} className="flex items-center justify-between py-2.5">
+                  <div>
+                    <div className="font-mono">{r.orderReference ?? 'Order'}</div>
+                    <div className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{rupees(r.commissionMinor)}</span>
+                    <Badge variant={r.status === 'confirmed' ? 'success' : r.status === 'void' ? 'destructive' : 'secondary'}>{r.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {data.payouts.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Payout requests</CardTitle></CardHeader>
+          <CardContent>
+            <div className="divide-y text-sm">
+              {data.payouts.map((p) => (
+                <div key={p.id} className="flex items-center justify-between py-2.5">
+                  <span className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{rupees(p.amountMinor)}</span>
+                    <Badge variant={p.status === 'paid' ? 'success' : p.status === 'rejected' ? 'destructive' : 'secondary'}>{p.status}</Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

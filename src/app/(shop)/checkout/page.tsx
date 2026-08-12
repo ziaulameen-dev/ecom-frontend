@@ -14,11 +14,13 @@ import { useCart } from '@/features/cart';
 import {
   useAddresses,
   useCreateAddress,
+  useReferral,
   type AddressInput,
 } from '@/features/account';
 import { AddressForm } from '@/features/account/components/address-form';
 import { useCheckout, useValidateCoupon } from '@/features/checkout';
 import { api } from '@/lib/api-client';
+import { referral } from '@/lib/session';
 import { cn, money } from '@/lib/utils';
 
 type Phase = 'form' | 'paying' | 'confirming' | 'done';
@@ -50,8 +52,14 @@ export default function CheckoutPage() {
     }
   }, [addresses, selected]);
 
+  const { data: refSummary } = useReferral();
+  const [useWallet, setUseWallet] = useState(false);
+
   const subtotal = cart?.subtotalMinor ?? 0;
   const discount = coupon?.discountMinor ?? 0;
+  const walletAvailable = refSummary?.availableMinor ?? 0;
+  // Client-side estimate; the server enforces the real cap (keeps ≥ min charge).
+  const walletApplied = useWallet ? Math.min(walletAvailable, Math.max(0, subtotal - discount)) : 0;
 
   async function saveAddress(values: AddressInput) {
     try {
@@ -102,7 +110,12 @@ export default function CheckoutPage() {
     if (!selected) return toast.error('Select an address');
     setPhase('paying');
     try {
-      const result = await checkout.mutateAsync({ addressId: selected, couponCode: coupon?.code });
+      const result = await checkout.mutateAsync({
+        addressId: selected,
+        couponCode: coupon?.code,
+        referralCode: referral.get() ?? undefined,
+        useWallet,
+      });
       const cashfree = await load({ mode: result.mode === 'production' ? 'production' : 'sandbox' });
       const res = await cashfree.checkout({ paymentSessionId: result.paymentSessionId, redirectTarget: '_modal' });
       if (res.error) {
@@ -178,6 +191,7 @@ export default function CheckoutPage() {
               <div className="space-y-1.5 text-sm">
                 <Row label="Subtotal" value={money(subtotal, cart!.currency)} />
                 {discount > 0 && <Row label={`Discount (${coupon?.code})`} value={`− ${money(discount, cart!.currency)}`} />}
+                {walletApplied > 0 && <Row label="Referral balance" value={`− ${money(walletApplied, cart!.currency)}`} />}
                 <Row label="Shipping & tax" value="At payment" muted />
               </div>
 
@@ -186,10 +200,17 @@ export default function CheckoutPage() {
                 <Button variant="outline" size="sm" onClick={applyCoupon} disabled={validateCoupon.isPending}>Apply</Button>
               </div>
 
+              {walletAvailable > 0 && (
+                <label className="flex cursor-pointer items-center gap-2 rounded-md border p-2.5 text-sm">
+                  <input type="checkbox" checked={useWallet} onChange={(e) => setUseWallet(e.target.checked)} />
+                  Use my referral balance <span className="font-medium">({money(walletAvailable, cart!.currency)})</span>
+                </label>
+              )}
+
               <Separator />
               <div className="flex justify-between font-semibold">
                 <span>Estimated total</span>
-                <span>{money(subtotal - discount, cart!.currency)}</span>
+                <span>{money(Math.max(0, subtotal - discount - walletApplied), cart!.currency)}</span>
               </div>
 
               <Button className="w-full" size="lg" disabled={!selected || phase === 'paying'} onClick={pay}>

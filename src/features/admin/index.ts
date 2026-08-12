@@ -55,3 +55,6 @@ export {
 
 export { useShippingRate, useSetShippingRate } from './hooks/use-admin-shipping';
 export { useSubscribers, useCustomers, useBroadcast, useNotifyProduct } from './hooks/use-admin-newsletter';
+export {
+  useAffiliateSettings, useSetAffiliateSettings, useAdminReferrals, useAdminPayouts, useDecidePayout,
+} from './hooks/use-admin-affiliate';

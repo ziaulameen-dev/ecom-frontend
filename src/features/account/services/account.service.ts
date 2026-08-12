@@ -2,7 +2,7 @@
 
 import { api } from '@/lib/api-client';
 import type {
-  ActiveCoupon, AdminReturn, Address, Order, OrderItem, Review, ReviewableProduct, User,
+  ActiveCoupon, AdminReturn, Address, Order, OrderItem, ReferralSummary, Review, ReviewableProduct, User,
 } from '@/lib/types';
 import type { AddressInput } from '../types';
 
@@ -120,6 +120,18 @@ export function fetchReviewable() {
 /** Reviews the customer has written. */
 export function fetchMyReviews() {
   return api.get<Review[]>('/api/reviews/mine');
+}
+
+// ---- Referral / Refer & Earn ----------------------------------------------
+
+/** The current user's referral code, balance, referrals and payouts. */
+export function fetchReferralSummary() {
+  return api.get<ReferralSummary>('/api/referrals/me');
+}
+
+/** Request a payout of part of the wallet balance. */
+export function requestPayout(input: { amountMinor: number; note?: string }) {
+  return api.post('/api/referrals/payout', input);
 }
 
 /** Submit a review for a purchased+delivered product. */

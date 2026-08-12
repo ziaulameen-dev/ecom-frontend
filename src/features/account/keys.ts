@@ -7,4 +7,5 @@ export const accountKeys = {
   coupons: ['my-coupons'] as const,
   reviewable: ['reviewable-products'] as const,
   myReviews: ['my-reviews'] as const,
+  referral: ['referral-summary'] as const,
 };
