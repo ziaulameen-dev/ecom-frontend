@@ -42,6 +42,7 @@ import {
   useReferral,
   useRequestEmailChange,
   useRequestPayout,
+  useVerifyAccount,
   useReviewable,
   useSubmitReview,
   useUpdateProfile,
@@ -461,27 +462,16 @@ function StatCard({ label, value, note }: { label: string; value: string; note?:
   );
 }
 
+const rupees = (m: number) => `₹${(m / 100).toFixed(0)}`;
+
 function ReferralTab() {
   const { data, isLoading } = useReferral();
-  const payout = useRequestPayout();
-  const [amount, setAmount] = useState('');
 
   if (isLoading || !data) return <p className="text-muted-foreground">Loading…</p>;
 
-  const rupees = (m: number) => `₹${(m / 100).toFixed(0)}`;
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const link = `${origin}/?ref=${data.code}`;
   const remaining = Math.max(0, data.unlockThreshold - data.confirmedCount);
-
-  async function submitPayout() {
-    const paise = Math.round(Number(amount) * 100);
-    if (!paise || paise <= 0) { toast.error('Enter an amount'); return; }
-    try {
-      await payout.mutateAsync({ amountMinor: paise });
-      toast.success('Payout requested');
-      setAmount('');
-    } catch (e) { toast.error((e as Error).message); }
-  }
 
   return (
     <div className="space-y-6">
@@ -511,16 +501,7 @@ function ReferralTab() {
       </div>
 
       {data.unlocked && data.availableMinor >= data.minPayoutMinor && (
-        <Card>
-          <CardHeader><CardTitle>Request a payout</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">Minimum {rupees(data.minPayoutMinor)}. You can also spend your balance at checkout.</p>
-            <div className="flex gap-2">
-              <Input type="number" placeholder={`Amount (max ${rupees(data.availableMinor)})`} value={amount} onChange={(e) => setAmount(e.target.value)} className="max-w-52" />
-              <Button variant="primary" onClick={submitPayout} disabled={payout.isPending}>{payout.isPending ? 'Requesting…' : 'Request payout'}</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PayoutForm minPayoutMinor={data.minPayoutMinor} availableMinor={data.availableMinor} />
       )}
 
       <Card>
@@ -554,7 +535,10 @@ function ReferralTab() {
             <div className="divide-y text-sm">
               {data.payouts.map((p) => (
                 <div key={p.id} className="flex items-center justify-between py-2.5">
-                  <span className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</span>
+                  <div>
+                    <div className="text-xs uppercase text-muted-foreground">{p.method}{p.verifiedName ? ` · ${p.verifiedName}` : ''}</div>
+                    <div className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</div>
+                  </div>
                   <div className="flex items-center gap-3">
                     <span className="font-medium">{rupees(p.amountMinor)}</span>
                     <Badge variant={p.status === 'paid' ? 'success' : p.status === 'rejected' ? 'destructive' : 'secondary'}>{p.status}</Badge>
@@ -566,6 +550,96 @@ function ReferralTab() {
         </Card>
       )}
     </div>
+  );
+}
+
+function PayoutForm({ minPayoutMinor, availableMinor }: { minPayoutMinor: number; availableMinor: number }) {
+  const payout = useRequestPayout();
+  const verify = useVerifyAccount();
+  const [amount, setAmount] = useState('');
+  const [method, setMethod] = useState<'upi' | 'bank'>('upi');
+  const [upiId, setUpiId] = useState('');
+  const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [ifsc, setIfsc] = useState('');
+  const [verifiedName, setVerifiedName] = useState<string | null>(null);
+
+  const account = () =>
+    method === 'upi'
+      ? { method, upiId: upiId.trim() }
+      : { method, accountName: accountName.trim(), accountNumber: accountNumber.trim(), ifsc: ifsc.trim().toUpperCase() };
+  const filled = method === 'upi'
+    ? !!upiId.trim()
+    : !!accountName.trim() && !!accountNumber.trim() && !!ifsc.trim();
+  const reset = () => setVerifiedName(null);
+
+  async function onVerify() {
+    try {
+      const r = await verify.mutateAsync(account());
+      if (!r.available) { toast.message('Verification isn’t enabled — your details will be saved as entered.'); return; }
+      if (r.valid) { setVerifiedName(r.name ?? null); toast.success(r.name ? `Verified: ${r.name}` : 'Account verified'); }
+      else { setVerifiedName(null); toast.error(r.message ?? 'Could not verify this account'); }
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  async function submit() {
+    const paise = Math.round(Number(amount) * 100);
+    if (!paise || paise <= 0) { toast.error('Enter an amount'); return; }
+    if (!filled) { toast.error('Enter your payout details'); return; }
+    try {
+      await payout.mutateAsync({ amountMinor: paise, ...account() });
+      toast.success('Payout requested');
+      setAmount(''); setUpiId(''); setAccountName(''); setAccountNumber(''); setIfsc(''); reset();
+    } catch (e) { toast.error((e as Error).message); }
+  }
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Request a payout</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">Minimum {rupees(minPayoutMinor)}. You can also spend your balance at checkout.</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label>Amount (₹)</Label>
+            <Input type="number" placeholder={`Max ${rupees(availableMinor)}`} value={amount} onChange={(e) => setAmount(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Payout to</Label>
+            <Select value={method} onValueChange={(v) => { setMethod(v as 'upi' | 'bank'); reset(); }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="upi">UPI ID</SelectItem>
+                <SelectItem value="bank">Bank account</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {method === 'upi' ? (
+          <div className="space-y-1.5">
+            <Label>UPI ID</Label>
+            <Input placeholder="name@bank" value={upiId} onChange={(e) => { setUpiId(e.target.value); reset(); }} />
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5 sm:col-span-2"><Label>Account holder name</Label><Input value={accountName} onChange={(e) => { setAccountName(e.target.value); reset(); }} /></div>
+            <div className="space-y-1.5"><Label>Account number</Label><Input value={accountNumber} onChange={(e) => { setAccountNumber(e.target.value); reset(); }} /></div>
+            <div className="space-y-1.5"><Label>IFSC</Label><Input value={ifsc} onChange={(e) => { setIfsc(e.target.value.toUpperCase()); reset(); }} /></div>
+          </div>
+        )}
+
+        {verifiedName && (
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 text-sm text-emerald-600 dark:text-emerald-400">
+            Account holder: <span className="font-medium">{verifiedName}</span>
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onVerify} disabled={!filled || verify.isPending}>{verify.isPending ? 'Verifying…' : 'Verify account'}</Button>
+          <Button variant="primary" onClick={submit} disabled={payout.isPending}>{payout.isPending ? 'Requesting…' : 'Request payout'}</Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

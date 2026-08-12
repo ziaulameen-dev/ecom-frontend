@@ -105,7 +105,17 @@ function PayoutsCard() {
                   <div key={p.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                     <div className="min-w-0">
                       <div className="font-medium">{p.userEmail ?? p.userId.slice(0, 8)}</div>
-                      <div className="text-xs text-muted-foreground">{formatDate(p.createdAt)}{p.note ? ` · ${p.note}` : ''}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.method === 'upi'
+                          ? `UPI: ${p.upiId ?? '—'}`
+                          : `A/C: ${p.accountNumber ?? '—'} · IFSC: ${p.ifsc ?? '—'}${p.accountName ? ` · ${p.accountName}` : ''}`}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.verified && p.verifiedName
+                          ? <span className="text-emerald-600 dark:text-emerald-400">✓ Verified: {p.verifiedName}</span>
+                          : 'Unverified'}
+                        {' · '}{formatDate(p.createdAt)}{p.note ? ` · ${p.note}` : ''}
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="font-semibold">{money(p.amountMinor, 'INR')}</span>

@@ -219,11 +219,29 @@ export interface ReferralItem {
   status: ReferralStatus;
   createdAt: string;
 }
+export type PayoutMethod = 'upi' | 'bank';
+
 export interface ReferralPayout {
   id: string;
   amountMinor: number;
   status: PayoutStatus;
+  method: PayoutMethod;
+  verifiedName: string | null;
   createdAt: string;
+}
+/** UPI/bank destination sent with a payout request. */
+export interface PayoutAccount {
+  method: PayoutMethod;
+  upiId?: string;
+  accountName?: string;
+  accountNumber?: string;
+  ifsc?: string;
+}
+export interface AccountVerifyResult {
+  available: boolean;
+  valid?: boolean;
+  name?: string | null;
+  message?: string;
 }
 export interface ReferralSummary {
   code: string;
@@ -261,6 +279,13 @@ export interface AdminPayout {
   userEmail: string | null;
   amountMinor: number;
   status: PayoutStatus;
+  method: PayoutMethod;
+  upiId: string | null;
+  accountName: string | null;
+  accountNumber: string | null;
+  ifsc: string | null;
+  verifiedName: string | null;
+  verified: boolean;
   note: string | null;
   createdAt: string;
 }

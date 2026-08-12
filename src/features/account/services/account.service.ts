@@ -2,7 +2,8 @@
 
 import { api } from '@/lib/api-client';
 import type {
-  ActiveCoupon, AdminReturn, Address, Order, OrderItem, ReferralSummary, Review, ReviewableProduct, User,
+  AccountVerifyResult, ActiveCoupon, AdminReturn, Address, Order, OrderItem,
+  PayoutAccount, ReferralSummary, Review, ReviewableProduct, User,
 } from '@/lib/types';
 import type { AddressInput } from '../types';
 
@@ -129,8 +130,13 @@ export function fetchReferralSummary() {
   return api.get<ReferralSummary>('/api/referrals/me');
 }
 
-/** Request a payout of part of the wallet balance. */
-export function requestPayout(input: { amountMinor: number; note?: string }) {
+/** Verify a UPI/bank account — returns the holder name when Cashfree is configured. */
+export function verifyAccount(input: PayoutAccount) {
+  return api.post<AccountVerifyResult>('/api/referrals/verify-account', input);
+}
+
+/** Request a payout of part of the wallet balance to a UPI/bank account. */
+export function requestPayout(input: PayoutAccount & { amountMinor: number; note?: string }) {
   return api.post('/api/referrals/payout', input);
 }
 

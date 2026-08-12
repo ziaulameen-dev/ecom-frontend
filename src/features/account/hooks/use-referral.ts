@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { accountKeys } from '../keys';
-import { fetchReferralSummary, requestPayout } from '../services/account.service';
+import { fetchReferralSummary, requestPayout, verifyAccount } from '../services/account.service';
 
 /** The current user's Refer & Earn summary (code, balance, referrals, payouts). */
 export function useReferral(enabled = true) {
@@ -16,4 +16,9 @@ export function useRequestPayout() {
     mutationFn: requestPayout,
     onSuccess: () => qc.invalidateQueries({ queryKey: accountKeys.referral }),
   });
+}
+
+/** Verify a UPI/bank account before requesting a payout. */
+export function useVerifyAccount() {
+  return useMutation({ mutationFn: verifyAccount });
 }
