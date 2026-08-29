@@ -2,7 +2,8 @@
 
 import { GripVertical, Pencil, Trash2 } from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
@@ -50,8 +51,15 @@ const TABS = [
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
-export default function AdminSettingsPage() {
-  const [tab, setTab] = useState<TabId>('shipping');
+function SettingsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get('tab') as TabId;
+  const activeTab = TABS.some((t) => t.id === tabParam) ? tabParam : 'shipping';
+
+  const setTab = (t: TabId) => {
+    router.replace(`/admin/settings?tab=${t}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
@@ -60,15 +68,15 @@ export default function AdminSettingsPage() {
         <p className="text-sm text-muted-foreground">Store-wide configuration.</p>
       </div>
 
-      <div className="flex gap-1 border-b">
+      <div className="flex gap-1 border-b overflow-x-auto scrollbar-none whitespace-nowrap min-w-0">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              '-mb-px border-b-2 px-4 py-2 text-sm',
-              tab === t.id
+              '-mb-px border-b-2 px-4 py-2 text-sm shrink-0 transition-colors',
+              activeTab === t.id
                 ? 'border-foreground font-medium text-foreground'
                 : 'border-transparent text-muted-foreground hover:text-foreground',
             )}
@@ -78,13 +86,21 @@ export default function AdminSettingsPage() {
         ))}
       </div>
 
-      {tab === 'shipping' && <ShippingCard />}
-      {tab === 'hero' && <HeroManager />}
-      {tab === 'announcement' && <AnnouncementCard />}
-      {tab === 'faq' && <FaqCard />}
-      {tab === 'social' && <SocialCard />}
-      {tab === 'newsletter' && <NewsletterCard />}
+      {activeTab === 'shipping' && <ShippingCard />}
+      {activeTab === 'hero' && <HeroManager />}
+      {activeTab === 'announcement' && <AnnouncementCard />}
+      {activeTab === 'faq' && <FaqCard />}
+      {activeTab === 'social' && <SocialCard />}
+      {activeTab === 'newsletter' && <NewsletterCard />}
     </div>
+  );
+}
+
+export default function AdminSettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }
 
@@ -387,7 +403,14 @@ function BannerDialog({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="bf-file">Banner image</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bf-file">Banner image</Label>
+              {initial?.imageUrl && !file && (
+                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">
+                  Current: {initial.imageUrl.split('/').pop()}
+                </span>
+              )}
+            </div>
             <Input id="bf-file" type="file" accept="image/*" onChange={pickFile} />
           </div>
 

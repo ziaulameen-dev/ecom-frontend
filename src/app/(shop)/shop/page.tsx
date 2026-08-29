@@ -174,7 +174,7 @@ function ShopInner() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-semibold">{title}</h1>
 
       {/* Active filter chips */}
@@ -388,7 +388,7 @@ function Chip({ children, onClear }: { children: React.ReactNode; onClear: () =>
 
 export default function ShopPage() {
   return (
-    <Suspense fallback={<div className="mx-auto max-w-7xl px-4 py-16 text-muted-foreground">Loading…</div>}>
+    <Suspense fallback={<div className="mx-auto max-w-[1500px] px-4 py-16 text-muted-foreground">Loading…</div>}>
       <ShopInner />
     </Suspense>
   );

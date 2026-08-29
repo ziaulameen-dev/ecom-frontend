@@ -1,14 +1,19 @@
 'use client';
 
-import { Eye, GripVertical, ImagePlus, Loader2, Trash2 } from 'lucide-react';
+import { Eye, GripVertical, ImagePlus, Loader2, Play, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { cn, mediaSrc } from '@/lib/utils';
 import { useUploadProductImage } from '../hooks/use-admin-products';
 
-/** Ordered image list (upload + drag-to-reorder + remove). Images only — used
- *  for a variant's own images. Stores plain URL strings. */
+function isVideoUrl(url: string) {
+  if (!url) return false;
+  const clean = url.split('?')[0].toLowerCase();
+  return /\.(mp4|webm|mov|mkv|avi|ogv|3gp|m4v)$/i.test(clean);
+}
+
+/** Ordered image & video list for a variant (upload + drag-to-reorder + remove). Stores plain URL strings. */
 export function ImageManager({
   value,
   onChange,
@@ -25,8 +30,8 @@ export function ImageManager({
     e.target.value = '';
     let next = value;
     for (const file of files) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Only images are allowed here');
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
+        toast.error('Only images and videos are allowed');
         continue;
       }
       try {
@@ -55,7 +60,7 @@ export function ImageManager({
 
   return (
     <div className="flex flex-wrap gap-2">
-      <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onPick} />
+      <input ref={fileRef} type="file" accept="image/*,video/*" multiple className="hidden" onChange={onPick} />
       {value.map((url, i) => (
         <div
           key={`${url}-${i}`}
@@ -63,7 +68,16 @@ export function ImageManager({
           onDrop={() => onDrop(i)}
           className={cn('group relative size-16 overflow-hidden rounded-md border bg-muted/40', dragIdx === i && 'opacity-50')}
         >
-          <Image src={mediaSrc(url)} alt="" fill unoptimized sizes="64px" className="object-cover" />
+          {isVideoUrl(url) ? (
+            <>
+              <video src={mediaSrc(url)} className="h-full w-full object-cover" muted playsInline />
+              <span className="absolute left-0.5 top-0.5 flex items-center gap-0.5 rounded bg-black/60 px-1 py-0.5 text-[8px] text-white">
+                <Play className="size-2" /> video
+              </span>
+            </>
+          ) : (
+            <Image src={mediaSrc(url)} alt="" fill unoptimized sizes="64px" className="object-cover" />
+          )}
           <span
             draggable
             onDragStart={() => setDragIdx(i)}
@@ -74,7 +88,7 @@ export function ImageManager({
             <GripVertical className="size-3" />
           </span>
           <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-            <a href={mediaSrc(url)} target="_blank" rel="noopener noreferrer" title="View image" className="rounded bg-white/90 p-1 text-black hover:bg-white">
+            <a href={mediaSrc(url)} target="_blank" rel="noopener noreferrer" title="View media" className="rounded bg-white/90 p-1 text-black hover:bg-white">
               <Eye className="size-3.5" />
             </a>
             <button type="button" onClick={() => remove(i)} title="Delete" className="rounded bg-destructive p-1 text-white">

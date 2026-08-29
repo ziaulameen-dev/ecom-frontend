@@ -5,7 +5,7 @@ import type { ListingItem } from '@/lib/types';
 import { ProductCard } from './product-card';
 import { ScrollRow } from './scroll-row';
 
-const ITEM = 'w-[46%] shrink-0 snap-start md:w-[31%] lg:w-[23%]';
+const ITEM = 'w-[46%] shrink-0 snap-start sm:w-[31%] md:w-[23%] lg:w-[19%]';
 
 /** A horizontal strip of product cards (2 per row on mobile → 4 on desktop). */
 export function ProductRow({ items, loading }: { items?: ListingItem[]; loading?: boolean }) {

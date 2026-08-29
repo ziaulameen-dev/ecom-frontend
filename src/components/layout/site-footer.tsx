@@ -45,8 +45,8 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="mt-20">
-      <div className="mx-auto max-w-7xl border-t px-4 py-12">
+    <footer className="mt-8 md:mt-20">
+      <div className="mx-auto max-w-[1500px] border-t px-4 sm:px-6 lg:px-8 py-12 pb-20 md:pb-12">
         <div className="flex flex-col justify-between gap-10 md:flex-row">
           {/* Newsletter */}
           <div className="w-full max-w-lg">

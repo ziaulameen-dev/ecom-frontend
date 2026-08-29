@@ -115,7 +115,7 @@ function AccountInner() {
   const activeLabel = TABS.find((t) => t.key === rawTab)?.label ?? '';
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8 py-10">
       <h1 className="hidden text-2xl font-semibold md:block">My account</h1>
 
       {/* Desktop — sidebar + content */}

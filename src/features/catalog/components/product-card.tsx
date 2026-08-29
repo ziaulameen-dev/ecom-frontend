@@ -1,14 +1,12 @@
 'use client';
 
-import { Heart, ShoppingBag, Star } from 'lucide-react';
+import { Heart, ShoppingBag } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { useAddToCart } from '@/features/cart';
 import { useWishlist } from '@/features/wishlist';
 import type { ListingItem } from '@/lib/types';
+import { CARD_ASPECT_CLASS } from '@/lib/config';
 import { cn, mediaSrc, money } from '@/lib/utils';
 
 export function productHref(item: Pick<ListingItem, 'slug' | 'productId'>) {
@@ -16,28 +14,9 @@ export function productHref(item: Pick<ListingItem, 'slug' | 'productId'>) {
 }
 
 export function ProductCard({ item }: { item: ListingItem }) {
-  const add = useAddToCart();
-  const router = useRouter();
   const href = productHref(item);
   const wished = useWishlist((s) => s.ids.includes(item.key));
   const toggleWish = useWishlist((s) => s.toggle);
-
-  async function onAdd(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    // A listed variant card can be added directly; a plain product card may have
-    // variants to choose, so send the shopper to the detail page.
-    if (item.variantId) {
-      try {
-        await add.mutateAsync({ productId: item.productId, variantId: item.variantId });
-        toast.success('Added to cart');
-      } catch (err) {
-        toast.error((err as Error).message);
-      }
-    } else {
-      router.push(href);
-    }
-  }
 
   function onWish(e: React.MouseEvent) {
     e.preventDefault();
@@ -47,77 +26,53 @@ export function ProductCard({ item }: { item: ListingItem }) {
   }
 
   return (
-    <div className="group overflow-hidden rounded-sm border bg-card transition-shadow hover:shadow-md">
-      <div className="relative aspect-[16/14] overflow-hidden bg-muted">
+    <div className="group flex flex-col border border-gray-200 rounded-none overflow-hidden bg-white hover:shadow-md transition-shadow">
+      <Link href={href} className={cn('relative bg-gray-100 overflow-hidden block', CARD_ASPECT_CLASS)}>
         {item.imageUrl ? (
           <Image
             src={mediaSrc(item.imageUrl)}
             alt={item.name}
             fill
-            sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
-            className="object-cover"
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="grid h-full place-items-center text-muted-foreground">
+          <div className="grid h-full place-items-center text-gray-400">
             <ShoppingBag className="size-8" />
           </div>
         )}
 
-        {/* Whole-tile click target for navigation. */}
-        <Link href={href} className="absolute inset-0" aria-label={item.name} />
-
         {!item.inStock && (
-          <span className="absolute left-2 top-2 z-10 rounded-full bg-foreground/85 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-background">
+          <span className="absolute left-2 top-2 z-10 rounded-none bg-black/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
             Sold out
           </span>
         )}
 
-        {/* Wishlist heart — appears on hover, stays visible when wishlisted. */}
         <button
           type="button"
           aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
           onClick={onWish}
           className={cn(
-            'absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-full bg-background/90 shadow-sm transition-all hover:bg-background',
+            'absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-none bg-white/90 shadow-2xs transition-all hover:bg-white',
             wished ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
           )}
         >
-          <Heart className={cn('size-4', wished ? 'fill-destructive text-destructive' : 'text-foreground')} />
+          <Heart className={cn('size-4', wished ? 'fill-red-600 text-red-600' : 'text-gray-900')} />
         </button>
+      </Link>
 
-        {/* Add to cart — slides up on hover. */}
-        <div className="absolute inset-x-2 bottom-2 z-10 translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          <Button
-            className="w-fit rounded-xs"
-            size="sm"
-            disabled={!item.inStock || add.isPending}
-            onClick={onAdd}
-          >
-            <ShoppingBag /> {item.variantId ? 'Add to cart' : 'View'}
-          </Button>
-        </div>
-      </div>
-
-      <div className="p-3">
-        <Link href={href} className="block truncate text-xs font-semibold uppercase tracking-wide hover:underline">
+      <div className="p-3 flex flex-col flex-1">
+        <Link href={href} className="font-bold text-xs sm:text-sm text-gray-900 hover:text-gray-600 line-clamp-1">
           {item.name}
         </Link>
-        <div className="mt-1.5 flex items-center justify-between gap-2">
-          <div className="flex items-baseline gap-1.5">
-            {item.offerPriceMinor != null ? (
-              <>
-                <span className="text-sm font-semibold">{money(item.offerPriceMinor, item.currency)}</span>
-                <span className="text-xs text-muted-foreground line-through">{money(item.priceMinor, item.currency)}</span>
-              </>
-            ) : (
-              <span className="text-sm font-semibold">{money(item.priceMinor, item.currency)}</span>
-            )}
-          </div>
-          {item.ratingCount > 0 && (
-            <div className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
-              {item.ratingAvg.toFixed(1)}
-              <Star className="size-3 fill-current text-foreground" />
-            </div>
+        <div className="mt-2 flex items-baseline gap-2">
+          {item.offerPriceMinor != null ? (
+            <>
+              <span className="font-bold text-sm text-gray-900">{money(item.offerPriceMinor, item.currency)}</span>
+              <span className="text-xs text-gray-400 line-through">{money(item.priceMinor, item.currency)}</span>
+            </>
+          ) : (
+            <span className="font-bold text-sm text-gray-900">{money(item.priceMinor, item.currency)}</span>
           )}
         </div>
       </div>

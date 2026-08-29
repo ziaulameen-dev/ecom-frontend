@@ -87,6 +87,9 @@ export interface AttributeType {
   slug: string;
   display: 'text' | 'swatch';
   values: AttributeValue[];
+  sizeChartImage?: string | null;
+  sizeTableColumns?: string[] | null;
+  sizeTableRows?: string[][] | null;
 }
 
 export interface Price {
@@ -127,6 +130,7 @@ export interface Variant {
   offerPriceMinor: number | null;
   stock: number;
   images: string[];
+  customVariables?: Record<string, string>;
   listedSeparately: boolean;
   isDefault: boolean;
   options: VariantOption[];
@@ -339,6 +343,7 @@ export interface AdminVariant {
   stock: number;
   valueIds: string[];
   images: string[];
+  customVariables?: Record<string, string>;
   listedSeparately: boolean;
   isDefault: boolean;
   sortOrder: number;

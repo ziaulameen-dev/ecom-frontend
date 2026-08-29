@@ -1,57 +1,92 @@
 'use client';
 
-import { X } from 'lucide-react';
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState } from 'react';
 import { useAnnouncement } from '@/features/catalog';
+import { cn } from '@/lib/utils';
 
-// Session-scoped dismissal, exposed as an external store so reads are
-// hydration-safe (server snapshot = visible) and dismissing re-renders.
-const KEY = 'promo-dismissed';
-const listeners = new Set<() => void>();
-const subscribe = (cb: () => void) => {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-};
-const isDismissed = () => typeof window !== 'undefined' && sessionStorage.getItem(KEY) === '1';
-const dismiss = () => {
-  sessionStorage.setItem(KEY, '1');
-  listeners.forEach((l) => l());
-};
+const DEFAULT_MESSAGES = [
+  'SAVE 10% ON YOUR FIRST ORDER',
+  'FREE SHIPPING OVER ₹999',
+];
 
-/** Scrolling promo strip above the header: seamless marquee, pause on hover,
- * dismissible for the session. Messages + on/off come from admin settings. */
+/** Fading promo banner above the header:
+ * - Mobile: 1 item fading in & out.
+ * - Desktop: 50%/50% split with vertical line locked in the exact center.
+ * - Non-dismissible.
+ */
 export function AnnouncementBar() {
   const { data } = useAnnouncement();
-  const hidden = useSyncExternalStore(subscribe, isDismissed, () => false);
 
-  const messages = data?.messages ?? [];
-  if (hidden || !data?.active || messages.length === 0) return null;
+  const messages = data?.messages?.length ? data.messages : DEFAULT_MESSAGES;
 
-  // Repeat so one "half" fills wide screens, then double for the −50% loop.
-  const half = [...messages, ...messages];
-  const track = [...half, ...half];
+  // Mobile: cycles 1 message at a time.
+  // Desktop: cycles a PAIR of messages at a time (advance by 2).
+  const [mobileIndex, setMobileIndex] = useState(0);
+  const [desktopIndex, setDesktopIndex] = useState(0);
+  const [opacityClass, setOpacityClass] = useState('opacity-100');
+
+  useEffect(() => {
+    if (messages.length <= 1) return;
+    const interval = setInterval(() => {
+      setOpacityClass('opacity-0');
+      setTimeout(() => {
+        setMobileIndex((prev) => (prev + 1) % messages.length);
+        // Advance by 2 so the next pair shows
+        setDesktopIndex((prev) => (prev + 2) % messages.length);
+        setOpacityClass('opacity-100');
+      }, 500);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [messages.length]);
+
+  if (data && !data.active) return null;
+
+  // Mobile: current single message
+  const mobileMsg = messages[mobileIndex];
+
+  // Desktop: current pair — left and right
+  const leftMsg  = messages[desktopIndex % messages.length];
+  const rightMsg = messages[(desktopIndex + 1) % messages.length];
 
   return (
-    <div className="group relative bg-primary text-primary-foreground">
-      <div className="flex overflow-hidden">
-        <div className="flex shrink-0 animate-[marquee_32s_linear_infinite] items-center py-2 group-hover:[animation-play-state:paused] motion-reduce:animate-none">
-          {track.map((m, i) => (
-            <span key={i} className="flex items-center whitespace-nowrap text-[11px] uppercase tracking-[0.18em]">
-              {m}
-              <span className="mx-8 size-1 rounded-full bg-brand" aria-hidden />
-            </span>
-          ))}
+    <div className="relative z-40 bg-black text-white select-none overflow-hidden" style={{ minHeight: '34px' }}>
+      {/* Mobile / Tablet (< lg): Single message fading in/out */}
+      <div className="lg:hidden flex items-center justify-center px-4 py-2 min-h-[34px]">
+        <div
+          className={cn(
+            'text-[10px] font-semibold uppercase tracking-[0.2em] text-white text-center transition-opacity duration-500 ease-in-out',
+            opacityClass,
+          )}
+        >
+          {mobileMsg}
         </div>
       </div>
 
-      <button
-        type="button"
-        aria-label="Dismiss announcement"
-        onClick={dismiss}
-        className="absolute right-0 top-0 grid h-full place-items-center bg-primary pl-4 pr-2 text-primary-foreground/70 transition-colors hover:text-primary-foreground"
-      >
-        <X className="size-3.5" />
-      </button>
+      {/* Desktop (≥ lg): 50% / 50% split — both swap as a pair */}
+      <div className="hidden lg:flex items-stretch w-full min-h-[34px]">
+        {/* Left 50% */}
+        <div
+          className={cn(
+            'w-1/2 flex items-center justify-center px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition-opacity duration-500 ease-in-out',
+            opacityClass,
+          )}
+        >
+          {leftMsg}
+        </div>
+
+        {/* Full-height vertical divider locked at center */}
+        <span className="w-px self-stretch bg-white/40 shrink-0" />
+
+        {/* Right 50% */}
+        <div
+          className={cn(
+            'w-1/2 flex items-center justify-center px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-white transition-opacity duration-500 ease-in-out',
+            opacityClass,
+          )}
+        >
+          {rightMsg}
+        </div>
+      </div>
     </div>
   );
 }

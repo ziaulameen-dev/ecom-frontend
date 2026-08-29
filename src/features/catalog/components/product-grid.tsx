@@ -1,5 +1,7 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import type { ListingItem } from '@/lib/types';
+import { CARD_ASPECT_CLASS } from '@/lib/config';
+import { cn } from '@/lib/utils';
 import { ProductCard } from './product-card';
 
 export function ProductGrid({
@@ -15,7 +17,7 @@ export function ProductGrid({
     return (
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
         {Array.from({ length: skeletonCount }).map((_, i) => (
-          <Skeleton key={i} className="aspect-[3/4] w-full rounded-xl" />
+          <Skeleton key={i} className={cn('w-full rounded-none', CARD_ASPECT_CLASS)} />
         ))}
       </div>
     );

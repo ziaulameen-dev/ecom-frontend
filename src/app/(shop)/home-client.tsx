@@ -40,7 +40,7 @@ export function HomeClient() {
   return (
     <div>
       {/* Hero — admin-managed banner carousel (falls back to a bundled image). */}
-      <section className="mx-auto max-w-7xl px-4 pt-6 lg:px-40">
+      <section className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8 pt-6 lg:px-40">
         {heroLoading ? (
           <Skeleton className="w-full rounded-sm" style={{ aspectRatio: ratio }} />
         ) : banners.length > 0 ? (
@@ -67,7 +67,7 @@ export function HomeClient() {
 
       {/* Shop by collection — horizontal strip (skeleton while loading) */}
       {treeLoading ? (
-        <section className="mx-auto mt-16 max-w-7xl px-4">
+        <section className="mx-auto mt-16 max-w-[1500px] px-4 sm:px-6 lg:px-8">
           <SectionHead title="Shop by collection" />
           <ScrollRow>
             {Array.from({ length: 4 }).map((_, i) => (
@@ -78,7 +78,7 @@ export function HomeClient() {
           </ScrollRow>
         </section>
       ) : !!tree?.length && (
-        <section className="mx-auto mt-16 max-w-7xl px-4">
+        <section className="mx-auto mt-16 max-w-[1500px] px-4 sm:px-6 lg:px-8">
           <SectionHead title="Shop by collection" href="/shop" />
           <ScrollRow>
             {tree.map((c) => (
@@ -91,25 +91,25 @@ export function HomeClient() {
       )}
 
       {/* Best sellers — horizontal strip */}
-      <section className="mx-auto mt-16 max-w-7xl px-4">
+      <section className="mx-auto mt-16 max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <SectionHead title="Best sellers" href="/shop?sort=best" />
         <ProductRow items={bestSellers} loading={isLoading} />
       </section>
 
       {/* New arrivals — horizontal strip */}
-      <section className="mx-auto mt-16 max-w-7xl px-4">
+      <section className="mx-auto mt-16 max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <SectionHead title="New arrivals" href="/shop?sort=new" />
         <ProductRow items={newArrivals} loading={isLoading} />
       </section>
 
       {/* Trust / value-props band */}
-      <section className="mx-auto mt-16 max-w-7xl px-4">
+      <section className="mx-auto mt-16 max-w-[1500px] px-4 sm:px-6 lg:px-8">
         <ValueProps />
       </section>
 
       {/* FAQ — admin-managed, shown only when questions exist */}
       {faqs.length > 0 && (
-        <section className="mx-auto mt-20 max-w-7xl px-4">
+        <section className="mx-auto mt-20 max-w-[1500px] px-4 sm:px-6 lg:px-8">
           <SectionHead title="Frequently asked questions" />
           <div className="divide-y border-t max-w-3xl">
             {faqs.map((faq, i) => (

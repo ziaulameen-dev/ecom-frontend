@@ -93,8 +93,8 @@ export function ProductForm({ mode, product }: Props) {
     try {
       if (mode === 'create') {
         const created = await create.mutateAsync(body) as { id: string };
-        toast.success('Product created — add variants below');
-        router.push(`/admin/products/${created.id}/edit`);
+        toast.success('Product created — opening variant manager');
+        router.push(`/admin/products/${created.id}/edit?addVariant=true`);
       } else if (product) {
         await update.mutateAsync({ id: product.id, body });
         toast.success('Product saved');
@@ -128,7 +128,7 @@ export function ProductForm({ mode, product }: Props) {
             Discard
           </Button>
           <Button type="submit" className="flex-1 sm:flex-none" disabled={pending}>
-            {pending ? 'Saving…' : mode === 'create' ? 'Add Product' : 'Save changes'}
+            {pending ? 'Saving…' : mode === 'create' ? 'Save & Add Variants' : 'Save changes'}
           </Button>
         </div>
       </div>
@@ -198,12 +198,24 @@ export function ProductForm({ mode, product }: Props) {
             </CardContent>
           </Card>
 
-          {mode === 'edit' && product && (
-            <Card>
-              <CardHeader><CardTitle className="text-base">Variants</CardTitle></CardHeader>
-              <CardContent><VariantsManager product={product} /></CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Variants</CardTitle></CardHeader>
+            <CardContent>
+              {mode === 'edit' && product ? (
+                <VariantsManager product={product} />
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-6 text-center">
+                  <p className="text-sm font-semibold text-foreground">Add Variants (Sizes, Colors, SKUs)</p>
+                  <p className="mt-1 text-xs text-muted-foreground max-w-md leading-relaxed">
+                    First fill in the product name and basic details, then click <strong>"Save &amp; Add Variants"</strong> to save the product and open the variant drawer.
+                  </p>
+                  <Button type="submit" size="sm" className="mt-4" disabled={pending}>
+                    {pending ? 'Saving…' : 'Save & Add Variants'}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right column */}

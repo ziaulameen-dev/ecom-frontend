@@ -65,7 +65,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 bg-background/90 backdrop-blur">
       {/* Row 1 — search · brand · profile/wishlist/cart (borderless) */}
-      <div className="mx-auto grid h-12 max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-3 xl:px-0">
+      <div className="mx-auto grid h-12 max-w-[1500px] grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-8">
         {/* Desktop: inline search field (col 1). Hidden below sm so the brand
             can take the left slot there. */}
         <form onSubmit={search} className="relative col-start-1 hidden w-52 lg:w-66 justify-self-start sm:block">
@@ -135,9 +135,9 @@ export function SiteHeader() {
       </div>
 
       {/* Row 2 — one scrollable strip on mobile; two clusters on desktop.
-          Bottom border lives here (max-w-7xl) so it aligns with the content,
+          Bottom border lives here (max-w-[1500px]) so it aligns with the content,
           not the full-width header. */}
-      <div className="mx-auto flex max-w-7xl items-center gap-5 overflow-x-auto border-b pb-2.5 sm:px-4 md:justify-between md:overflow-x-visible px-3 xl:px-0">
+      <div className="mx-auto flex max-w-[1500px] items-center gap-5 overflow-x-auto border-b pb-2.5 px-4 sm:px-6 lg:px-8 md:justify-between md:overflow-x-visible">
         <div className="flex shrink-0 items-center gap-5">
           <DropdownMenu>
             <DropdownMenuTrigger className={navText}>
