@@ -2,8 +2,8 @@
 
 import { api } from '@/lib/api-client';
 import type {
-  AccountVerifyResult, ActiveCoupon, AdminReturn, Address, Order, OrderItem,
-  PayoutAccount, ReferralSummary, Review, ReviewableProduct, User,
+  ActiveCoupon, AdminReturn, Address, Order, OrderItem,
+  Review, ReviewableProduct, User,
 } from '@/lib/types';
 import type { AddressInput } from '../types';
 
@@ -121,23 +121,6 @@ export function fetchReviewable() {
 /** Reviews the customer has written. */
 export function fetchMyReviews() {
   return api.get<Review[]>('/api/reviews/mine');
-}
-
-// ---- Referral / Refer & Earn ----------------------------------------------
-
-/** The current user's referral code, balance, referrals and payouts. */
-export function fetchReferralSummary() {
-  return api.get<ReferralSummary>('/api/referrals/me');
-}
-
-/** Verify a UPI/bank account — returns the holder name when Cashfree is configured. */
-export function verifyAccount(input: PayoutAccount) {
-  return api.post<AccountVerifyResult>('/api/referrals/verify-account', input);
-}
-
-/** Request a payout of part of the wallet balance to a UPI/bank account. */
-export function requestPayout(input: PayoutAccount & { amountMinor: number; note?: string }) {
-  return api.post('/api/referrals/payout', input);
 }
 
 /** Submit a review for a purchased+delivered product. */

@@ -54,15 +54,17 @@ export function fetchHero() {
   return api.get<HeroConfig>('/api/hero');
 }
 
-/** Admin: add a hero banner (image + link). */
-export function createHero(input: { imageUrl: string; linkUrl: string }) {
+export type HeroBannerInput = Partial<Omit<HeroBanner, 'id'>> & { imageUrl: string };
+
+/** Admin: add a hero banner. */
+export function createHero(input: HeroBannerInput) {
   return api.post<HeroBanner>('/api/hero', input);
 }
 
 /** Admin: edit a hero banner (any subset of fields). */
 export function updateHero(
   id: string,
-  input: Partial<{ imageUrl: string; linkUrl: string }>,
+  input: Partial<Omit<HeroBanner, 'id'>>,
 ) {
   return api.patch<HeroBanner>(`/api/hero/${id}`, input);
 }

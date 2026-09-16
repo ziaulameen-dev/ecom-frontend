@@ -1,8 +1,8 @@
 'use client';
 
-import { ImagePlus, MoreHorizontal, Plus, Search, Trash2, X } from 'lucide-react';
+import { ImagePlus, MoreHorizontal, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
 import { RatingStars } from '@/components/rating-stars';
@@ -21,7 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
   useAdminProducts, useAdminReviews, useCreateReview, useDeleteReview,
-  useUploadProductImage,
+  useUpdateReview, useUploadProductImage,
 } from '@/features/admin';
 import type { Review } from '@/lib/types';
 import { formatDate, mediaSrc } from '@/lib/utils';
@@ -112,70 +112,116 @@ export default function AdminReviewsPage() {
 
 function ReviewRow({ review, productName }: { review: Review; productName: string }) {
   const del = useDeleteReview();
+  const [editOpen, setEditOpen] = useState(false);
+
   return (
-    <tr className="border-b last:border-0 hover:bg-muted/30">
-      <td className="px-4 py-3">
-        <div className="min-w-0 max-w-56 truncate font-medium">{productName}</div>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <RatingStars value={review.rating} />
-          <span className="text-xs text-muted-foreground">{review.rating}</span>
-        </div>
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">{review.authorName}</td>
-      <td className="px-4 py-3">
-        <div className="min-w-0 max-w-80">
-          {review.title && <div className="truncate font-medium">{review.title}</div>}
-          <div className="truncate text-muted-foreground">{review.body}</div>
-          {review.images?.length > 0 && (
-            <div className="mt-1.5 flex gap-1">
-              {review.images.slice(0, 4).map((url) => (
-                <div key={url} className="relative size-8 overflow-hidden rounded border">
-                  <Image src={mediaSrc(url)} alt="" fill sizes="32px" className="object-cover" />
-                </div>
-              ))}
-              {review.images.length > 4 && (
-                <span className="self-center text-xs text-muted-foreground">+{review.images.length - 4}</span>
-              )}
-            </div>
-          )}
-        </div>
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">{formatDate(review.createdAt)}</td>
-      <td className="px-4 py-3">
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal className="size-4" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={async () => { if (await confirm({ title: 'Delete review?', description: `The review by "${review.authorName}" will be removed.`, confirmText: 'Delete', destructive: true })) del.mutate(review.id, { onError: (e) => toast.error((e as Error).message) }); }}
-              >
-                <Trash2 className="size-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr className="border-b last:border-0 hover:bg-muted/30">
+        <td className="px-4 py-3">
+          <div className="min-w-0 max-w-56 truncate font-medium">{productName}</div>
+        </td>
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            <RatingStars value={review.rating} />
+            <span className="text-xs text-muted-foreground">{review.rating}</span>
+          </div>
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">{review.authorName}</td>
+        <td className="px-4 py-3">
+          <div className="min-w-0 max-w-80">
+            {review.title && <div className="truncate font-medium">{review.title}</div>}
+            <div className="truncate text-muted-foreground">{review.body}</div>
+            {review.images?.length > 0 && (
+              <div className="mt-1.5 flex gap-1">
+                {review.images.slice(0, 4).map((url) => (
+                  <div key={url} className="relative size-8 overflow-hidden rounded-xs border">
+                    <Image src={mediaSrc(url)} alt="" fill sizes="32px" className="object-cover" />
+                  </div>
+                ))}
+                {review.images.length > 4 && (
+                  <span className="self-center text-xs text-muted-foreground">+{review.images.length - 4}</span>
+                )}
+              </div>
+            )}
+          </div>
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">{formatDate(review.createdAt)}</td>
+        <td className="px-4 py-3">
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal className="size-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                  <Pencil className="size-4" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={async () => { if (await confirm({ title: 'Delete review?', description: `The review by "${review.authorName}" will be removed.`, confirmText: 'Delete', destructive: true })) del.mutate(review.id, { onError: (e) => toast.error((e as Error).message) }); }}
+                >
+                  <Trash2 className="size-4" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </td>
+      </tr>
+
+      {editOpen && (
+        <ReviewDialog review={review} open={editOpen} onOpenChange={setEditOpen} />
+      )}
+    </>
   );
 }
 
-/** Add a review in a dialog — same create hook + payload as before. */
-function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
+/** Add or edit a review in a dialog. */
+function ReviewDialog({
+  trigger,
+  review,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+}: {
+  trigger?: React.ReactNode;
+  review?: Review;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const { data: products } = useAdminProducts();
   const create = useCreateReview();
+  const update = useUpdateReview();
   const upload = useUploadProductImage();
   const [uploading, setUploading] = useState(false);
 
-  const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ productId: '', rating: 5, title: '', body: '', authorName: '', images: [] as string[] });
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = isControlled ? setControlledOpen! : setUncontrolledOpen;
+
+  const [f, setF] = useState({
+    productId: review?.productId || '',
+    rating: review?.rating ?? 5,
+    title: review?.title || '',
+    body: review?.body || '',
+    authorName: review?.authorName || '',
+    images: review?.images || [],
+  });
+
+  useEffect(() => {
+    if (open && review) {
+      setF({
+        productId: review.productId,
+        rating: review.rating,
+        title: review.title || '',
+        body: review.body,
+        authorName: review.authorName,
+        images: review.images || [],
+      });
+    }
+  }, [open, review]);
 
   // Effective product: user's choice, or default to the first product.
-  const productId = f.productId || products?.[0]?.id || '';
+  const productId = f.productId || (review ? review.productId : products?.[0]?.id || '');
 
   async function addImages(files: FileList | null) {
     if (!files?.length) return;
@@ -197,22 +243,46 @@ function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
 
   async function submit() {
     try {
-      await create.mutateAsync({
-        productId, rating: Number(f.rating),
-        title: f.title || undefined, body: f.body, authorName: f.authorName,
-        images: f.images,
-      });
-      setF((s) => ({ ...s, title: '', body: '', authorName: '', images: [] }));
-      toast.success('Review added');
+      if (review) {
+        await update.mutateAsync({
+          id: review.id,
+          body: {
+            productId,
+            rating: Number(f.rating),
+            title: f.title || undefined,
+            body: f.body,
+            authorName: f.authorName,
+            images: f.images,
+          },
+        });
+        toast.success('Review updated');
+      } else {
+        await create.mutateAsync({
+          productId,
+          rating: Number(f.rating),
+          title: f.title || undefined,
+          body: f.body,
+          authorName: f.authorName,
+          images: f.images,
+        });
+        setF({ productId: '', rating: 5, title: '', body: '', authorName: '', images: [] });
+        toast.success('Review added');
+      }
       setOpen(false);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
+
+  const isSaving = create.isPending || update.isPending;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Add review</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{review ? 'Edit review' : 'Add review'}</DialogTitle>
+        </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
@@ -250,7 +320,7 @@ function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
             <Label>Photos <span className="text-muted-foreground">(optional, up to 8)</span></Label>
             <div className="flex flex-wrap gap-2">
               {f.images.map((url) => (
-                <div key={url} className="relative size-16 overflow-hidden rounded-md border">
+                <div key={url} className="relative size-16 overflow-hidden rounded-xs border">
                   <Image src={mediaSrc(url)} alt="Review photo" fill sizes="64px" className="object-cover" />
                   <button
                     type="button"
@@ -263,7 +333,7 @@ function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
                 </div>
               ))}
               {f.images.length < 8 && (
-                <label className="flex size-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed text-muted-foreground transition hover:border-foreground/40 hover:text-foreground">
+                <label className="flex size-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-xs border border-dashed text-muted-foreground transition hover:border-foreground/40 hover:text-foreground">
                   <ImagePlus className="size-4" />
                   <input
                     type="file"
@@ -283,9 +353,9 @@ function ReviewDialog({ trigger }: { trigger: React.ReactNode }) {
             <Button
               type="button"
               onClick={submit}
-              disabled={!productId || f.body.length < 2 || f.authorName.length < 2 || create.isPending || uploading}
+              disabled={!productId || f.body.length < 2 || f.authorName.length < 2 || isSaving || uploading}
             >
-              {create.isPending ? 'Saving…' : 'Add review'}
+              {isSaving ? 'Saving…' : review ? 'Save changes' : 'Add review'}
             </Button>
           </div>
         </div>

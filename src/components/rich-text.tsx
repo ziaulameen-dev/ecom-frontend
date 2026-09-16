@@ -3,13 +3,19 @@
 import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 
-/** Replace {token} with the matching variable (case-insensitive), else leave as-is. */
+/** Replace {token} with the matching variable (case-insensitive), and clean up empty/unmatched tokens. */
 export function fillTemplate(text: string, vars?: Record<string, string>): string {
-  if (!vars) return text;
-  return text.replace(/\{\s*([a-zA-Z0-9_ -]+?)\s*\}/g, (m, key: string) => {
-    const v = vars[key.trim().toLowerCase()];
-    return v != null && v !== '' ? v : m;
-  });
+  if (!text) return '';
+  let res = text;
+  if (vars && Object.keys(vars).length > 0) {
+    res = res.replace(/\{\s*([a-zA-Z0-9_ -]+?)\s*\}/g, (m, key: string) => {
+      const v = vars[key.trim().toLowerCase()];
+      return v != null && v !== '' ? v : '';
+    });
+  } else {
+    res = res.replace(/\{[^}]+\}/g, '');
+  }
+  return res.replace(/\{[^}]+\}/g, '').replace(/\s{2,}/g, ' ').trim();
 }
 
 /**

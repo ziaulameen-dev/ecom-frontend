@@ -147,7 +147,7 @@ export default function AdminOrdersPage() {
             )}
           >
             {t.label}
-            <span className={cn('rounded-full px-1.5 text-xs', status === t.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground')}>{t.count}</span>
+            <span className={cn('rounded-xs px-1.5 text-xs', status === t.value ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground')}>{t.count}</span>
           </button>
         ))}
       </div>

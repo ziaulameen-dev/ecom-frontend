@@ -1,7 +1,6 @@
 'use client';
 
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -35,8 +34,8 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       className={cn(
         'fixed z-50 flex flex-col bg-background shadow-2xl transition ease-in-out duration-300 outline-none p-6 overflow-y-auto',
-        // Mobile: Slides up from bottom
-        'inset-x-0 bottom-0 top-auto h-[92vh] max-h-[92vh] rounded-t-2xl border-t border-x',
+        // Mobile: Slides up from bottom (fit content with max height)
+        'inset-x-0 bottom-0 top-auto h-auto max-h-[85vh] rounded-t-2xl border-t border-x',
         'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
         // Desktop: Right side slide-in drawer
         'md:top-0 md:bottom-0 md:right-0 md:left-auto md:h-full md:max-h-none md:w-full md:max-w-xl md:rounded-none md:border-l md:border-t-0 md:border-r-0',
@@ -48,10 +47,6 @@ const DrawerContent = React.forwardRef<
       {/* Mobile Top Drag Indicator Bar */}
       <div className="mx-auto -mt-2 mb-3 h-1.5 w-12 shrink-0 rounded-full bg-muted md:hidden" />
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none">
-        <X className="size-5" />
-        <span className="sr-only">Close</span>
-      </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DrawerPortal>
 ));

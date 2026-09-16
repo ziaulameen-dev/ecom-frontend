@@ -52,7 +52,7 @@ export function SizeChartModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col" hideCloseButton>
+      <DialogContent className="max-w-md sm:max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-center font-bold text-gray-900">
             SIZE CHART

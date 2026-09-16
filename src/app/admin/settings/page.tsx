@@ -1,20 +1,23 @@
 'use client';
 
-import { GripVertical, Pencil, Trash2 } from 'lucide-react';
+import { GripVertical, Pencil, Plus, Sparkles, Trash2, Truck } from 'lucide-react';
 import Image from 'next/image';
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  useAdminAttributes,
   useAdminProducts,
   useBroadcast,
   useNotifyProduct,
@@ -29,6 +32,7 @@ import {
   useCreateHero,
   useDeleteHero,
   useHero,
+  useProducts,
   useReorderHero,
   useSetAnnouncement,
   useSetContent,
@@ -106,58 +110,294 @@ export default function AdminSettingsPage() {
 
 /* ------------------------------------------------------------------ Shipping */
 
+/* ------------------------------------------------------------------ Shipping */
+
+interface TierRow {
+  minRupees: string;
+  maxRupees: string;
+  chargeRupees: string;
+}
+
 function ShippingCard() {
   const { data, isLoading } = useShippingRate();
   const setRate = useSetShippingRate();
-  const [form, setForm] = useState({ amount: 0, rupees: '' });
-  const [syncedFrom, setSyncedFrom] = useState<number | null>(null);
-  const { amount, rupees } = form;
+  const [tiers, setTiers] = useState<TierRow[]>([]);
+  const [synced, setSynced] = useState(false);
 
-  if (data && data.amountMinor !== syncedFrom) {
-    setSyncedFrom(data.amountMinor);
-    setForm({ amount: data.amountMinor, rupees: toRupees(data.amountMinor) });
+  // Sync initial tiers from backend
+  if (data && !synced) {
+    setSynced(true);
+    if (data.tiers && data.tiers.length > 0) {
+      setTiers(
+        data.tiers.map((t) => ({
+          minRupees: (t.minSubtotalMinor / 100).toString(),
+          maxRupees: t.maxSubtotalMinor != null ? (t.maxSubtotalMinor / 100).toString() : '',
+          chargeRupees: (t.amountMinor / 100).toString(),
+        })),
+      );
+    } else {
+      setTiers([
+        {
+          minRupees: '0',
+          maxRupees: '',
+          chargeRupees: (data.amountMinor / 100).toString(),
+        },
+      ]);
+    }
   }
 
+  const addTier = () => {
+    const last = tiers[tiers.length - 1];
+    const prevMax = last ? Number(last.maxRupees || last.minRupees || 0) : 0;
+    const nextMin = prevMax > 0 ? (prevMax + 1).toString() : '500';
+    setTiers([...tiers, { minRupees: nextMin, maxRupees: '', chargeRupees: '0' }]);
+  };
+
+  const removeTier = (index: number) => {
+    if (tiers.length <= 1) {
+      toast.error('You must keep at least one shipping slab.');
+      return;
+    }
+    setTiers(tiers.filter((_, idx) => idx !== index));
+  };
+
+  const updateTier = (index: number, patch: Partial<TierRow>) => {
+    setTiers(tiers.map((t, idx) => (idx === index ? { ...t, ...patch } : t)));
+  };
+
+  const applyPreset = (preset: 'freeOver1000' | 'freeOver500' | 'flat50' | 'freeAll') => {
+    if (preset === 'freeOver1000') {
+      setTiers([
+        { minRupees: '0', maxRupees: '499', chargeRupees: '60' },
+        { minRupees: '500', maxRupees: '999', chargeRupees: '30' },
+        { minRupees: '1000', maxRupees: '', chargeRupees: '0' },
+      ]);
+    } else if (preset === 'freeOver500') {
+      setTiers([
+        { minRupees: '0', maxRupees: '499', chargeRupees: '40' },
+        { minRupees: '500', maxRupees: '', chargeRupees: '0' },
+      ]);
+    } else if (preset === 'flat50') {
+      setTiers([{ minRupees: '0', maxRupees: '', chargeRupees: '50' }]);
+    } else if (preset === 'freeAll') {
+      setTiers([{ minRupees: '0', maxRupees: '', chargeRupees: '0' }]);
+    }
+  };
+
+  const handleSave = () => {
+    const payloadTiers = tiers.map((t) => ({
+      minSubtotalMinor: Math.round(Number(t.minRupees || 0) * 100),
+      maxSubtotalMinor: t.maxRupees.trim() !== '' ? Math.round(Number(t.maxRupees) * 100) : null,
+      amountMinor: Math.round(Number(t.chargeRupees || 0) * 100),
+    }));
+
+    setRate.mutate(
+      { tiers: payloadTiers },
+      {
+        onSuccess: () => toast.success('Shipping rates saved successfully'),
+        onError: (e) => toast.error((e as Error).message),
+      },
+    );
+  };
+
   return (
-    <Card className="max-w-md">
-      <CardHeader>
-        <CardTitle className="text-base">Shipping</CardTitle>
+    <Card className="max-w-3xl">
+      <CardHeader className="border-b pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Truck className="size-4 text-primary-button" />
+              Delivery &amp; Shipping Charges
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              Configure order subtotal slabs and flexible delivery fees (or Free Delivery).
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-[11px] h-7"
+              onClick={() => applyPreset('freeOver1000')}
+            >
+              <Sparkles className="size-3 mr-1 text-amber-500" />
+              Free over ₹1,000
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-[11px] h-7"
+              onClick={() => applyPreset('freeOver500')}
+            >
+              Free over ₹500
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-[11px] h-7"
+              onClick={() => applyPreset('freeAll')}
+            >
+              100% Free
+            </Button>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+
+      <CardContent className="space-y-6 pt-6">
         {isLoading ? (
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-40" />
-            <Skeleton className="h-9 w-full" />
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="delivery-charge">Flat delivery charge (₹)</Label>
-            <Input
-              id="delivery-charge"
-              type="number"
-              step="0.01"
-              min={0}
-              value={rupees}
-              onChange={(e) => setForm({ amount: toPaise(e.target.value), rupees: e.target.value })}
-              placeholder="0.00"
-            />
-            <p className="text-xs text-muted-foreground">
-              Currently {money(amount)} — applied to every order at checkout.
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_40px] gap-3 text-xs font-semibold text-muted-foreground px-1">
+                <span>Min Order Subtotal (₹)</span>
+                <span>Max Order Subtotal (₹)</span>
+                <span>Shipping Fee (₹)</span>
+                <span></span>
+              </div>
+
+              {tiers.map((t, idx) => {
+                const isFree = Number(t.chargeRupees || 0) === 0;
+
+                return (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:grid sm:grid-cols-[1fr_1fr_1fr_40px] gap-2.5 sm:gap-3 p-3 sm:p-2.5 rounded-xs border bg-card items-center"
+                  >
+                    <div className="w-full">
+                      <Label className="sm:hidden text-[11px] text-muted-foreground mb-1 block">
+                        Min Order Subtotal (₹)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={t.minRupees}
+                          onChange={(e) => updateTier(idx, { minRupees: e.target.value })}
+                          className="pl-6 h-9 text-xs"
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="w-full">
+                      <div className="flex items-center justify-between sm:hidden mb-1">
+                        <Label className="text-[11px] text-muted-foreground">Max Order Subtotal (₹)</Label>
+                        <span className="text-[10px] text-muted-foreground">(leave empty for no limit)</span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={t.maxRupees}
+                          onChange={(e) => updateTier(idx, { maxRupees: e.target.value })}
+                          className="pl-6 h-9 text-xs"
+                          placeholder="No upper limit (∞)"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="w-full">
+                      <div className="flex items-center justify-between sm:hidden mb-1">
+                        <Label className="text-[11px] text-muted-foreground">Shipping Fee (₹)</Label>
+                        {isFree && (
+                          <span className="text-[10px] font-bold text-[#7EC151]">FREE</span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          min={0}
+                          value={t.chargeRupees}
+                          onChange={(e) => updateTier(idx, { chargeRupees: e.target.value })}
+                          className="pl-6 h-9 text-xs"
+                          placeholder="0 (Free)"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end w-full sm:w-auto">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeTier(idx)}
+                        disabled={tiers.length <= 1}
+                        aria-label="Remove slab"
+                        className="size-8 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addTier}
+              className="text-xs font-semibold gap-1.5"
+            >
+              <Plus className="size-3.5" />
+              Add Shipping Slab
+            </Button>
+
+            {/* Live Customer Preview */}
+            <div className="rounded-xs border border-[#117a7a]/20 bg-[#117a7a]/5 p-3.5 space-y-2 text-xs">
+              <p className="font-bold text-[#117a7a] flex items-center gap-1.5">
+                <Truck className="size-3.5" />
+                Customer Checkout Preview:
+              </p>
+              <div className="divide-y divide-[#117a7a]/15 text-muted-foreground">
+                {tiers.map((t, idx) => {
+                  const min = Number(t.minRupees || 0);
+                  const max = t.maxRupees.trim() !== '' ? Number(t.maxRupees) : null;
+                  const charge = Number(t.chargeRupees || 0);
+
+                  return (
+                    <div key={idx} className="flex justify-between py-1.5 first:pt-0 last:pb-0">
+                      <span>
+                        Orders {max != null ? `₹${min.toLocaleString('en-IN')} – ₹${max.toLocaleString('en-IN')}` : `₹${min.toLocaleString('en-IN')} and above`}:
+                      </span>
+                      <span className={charge === 0 ? 'font-bold text-[#7EC151]' : 'font-semibold text-foreground'}>
+                        {charge === 0 ? 'FREE Delivery' : `₹${charge.toLocaleString('en-IN')}`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
-        <Button
-          onClick={() =>
-            setRate.mutate(Number(amount), {
-              onSuccess: () => toast.success('Saved'),
-              onError: (e) => toast.error((e as Error).message),
-            })
-          }
-          disabled={setRate.isPending || isLoading}
-        >
-          {setRate.isPending ? 'Saving…' : 'Save'}
-        </Button>
+        <div className="pt-2">
+          <Button
+            onClick={handleSave}
+            disabled={setRate.isPending || isLoading}
+            className="font-bold text-xs uppercase tracking-wider"
+          >
+            {setRate.isPending ? 'Saving Rates…' : 'Save Shipping Slabs'}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
@@ -178,13 +418,13 @@ function HeroManager() {
   const [sig, setSig] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<HeroBanner | null>(null);
-  const [aw, setAw] = useState('500');
-  const [ah, setAh] = useState('265');
+  const [aw, setAw] = useState('8');
+  const [ah, setAh] = useState('3');
   const [aspectSynced, setAspectSynced] = useState(false);
   const dragIndex = useRef<number | null>(null);
 
   // Seed/refresh the local ordered copy whenever the set of banners changes.
-  const nextSig = (banners ?? []).map((b) => b.id).join(',');
+  const nextSig = JSON.stringify(banners ?? []);
   if (banners && nextSig !== sig) {
     setSig(nextSig);
     setItems(banners);
@@ -196,8 +436,8 @@ function HeroManager() {
     setAh(String(hero.aspectHeight));
   }
 
-  const ratioW = Number(aw) || 500;
-  const ratioH = Number(ah) || 265;
+  const ratioW = Number(aw) || 8;
+  const ratioH = Number(ah) || 3;
 
   function onDrop(target: number) {
     const from = dragIndex.current;
@@ -207,7 +447,7 @@ function HeroManager() {
     const [moved] = next.splice(from, 1);
     next.splice(target, 0, moved);
     setItems(next);
-    setSig(next.map((b) => b.id).join(','));
+    setSig(JSON.stringify(next));
     reorder.mutate(
       next.map((b) => b.id),
       { onError: (e) => toast.error((e as Error).message) },
@@ -247,7 +487,7 @@ function HeroManager() {
           >
             {setAspect.isPending ? 'Saving…' : 'Save ratio'}
           </Button>
-          <p className="w-full text-xs text-muted-foreground">Applies to every hero banner (default 500 × 265).</p>
+          <p className="w-full text-xs text-muted-foreground">Applies to every hero banner (default 8 × 3).</p>
         </CardContent>
       </Card>
 
@@ -272,7 +512,7 @@ function HeroManager() {
                 onDragStart={() => (dragIndex.current = i)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => onDrop(i)}
-                className="flex items-center gap-3 rounded-lg border bg-card p-2"
+                className="flex items-center gap-3 rounded-xs border bg-card p-2"
               >
                 <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
                 <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-muted">
@@ -344,17 +584,39 @@ function BannerDialog({
 }: {
   initial?: HeroBanner;
   onClose: () => void;
-  onSave: (d: { imageUrl: string; linkUrl: string }) => void;
+  onSave: (d: Partial<Omit<HeroBanner, 'id'>> & { imageUrl: string }) => void;
   saving: boolean;
   aspectWidth: number;
   aspectHeight: number;
 }) {
   const upload = useUploadProductImage();
+  const { data: adminProducts } = useAdminProducts();
+  const { data: attributes } = useAdminAttributes();
+
+  const attrMap = useMemo(() => {
+    const m = new Map<string, string>();
+    (attributes ?? []).forEach((t) => {
+      t.values.forEach((v) => m.set(v.id, v.value));
+    });
+    return m;
+  }, [attributes]);
+  
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(
     initial?.imageUrl ? mediaSrc(initial.imageUrl) : null,
   );
-  const [link, setLink] = useState(initial?.linkUrl ?? '');
+  const [mobFile, setMobFile] = useState<File | null>(null);
+  const [mobPreview, setMobPreview] = useState<string | null>(
+    initial?.mobileImageUrl ? mediaSrc(initial.mobileImageUrl) : null,
+  );
+  const [title, setTitle] = useState(initial?.title ?? 'EXPLORE');
+  const [subtitle, setSubtitle] = useState(initial?.subtitle ?? 'COLLECTION');
+  const [tags, setTags] = useState((initial?.categoryTags ?? []).join(', '));
+  const [link, setLink] = useState(initial?.linkUrl ?? '/shop');
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>(
+    initial?.productIds ?? [],
+  );
+  const [productSearch, setProductSearch] = useState('');
   const [busy, setBusy] = useState(false);
 
   function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -367,16 +629,52 @@ function BannerDialog({
     });
   }
 
+  function pickMobFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setMobFile(f);
+    setMobPreview((prev) => {
+      if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(f);
+    });
+  }
+
+  function toggleProduct(id: string) {
+    setSelectedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id],
+    );
+  }
+
   async function submit() {
-    if (!file && !initial?.imageUrl) return toast.error('Choose an image first');
+    if (!file && !initial?.imageUrl) return toast.error('Choose a desktop background image first');
     setBusy(true);
     try {
       let imageUrl = initial?.imageUrl ?? '';
       if (file) {
-        const { url } = await upload.mutateAsync(file); // upload happens now, on save
+        const { url } = await upload.mutateAsync(file);
         imageUrl = url;
       }
-      onSave({ imageUrl, linkUrl: link.trim() || '/shop' });
+
+      let mobileImageUrl = initial?.mobileImageUrl ?? null;
+      if (mobFile) {
+        const { url } = await upload.mutateAsync(mobFile);
+        mobileImageUrl = url;
+      }
+
+      const parsedTags = tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      onSave({
+        imageUrl,
+        mobileImageUrl,
+        title: title.trim() || 'EXPLORE',
+        subtitle: subtitle.trim() || 'COLLECTION',
+        categoryTags: parsedTags,
+        productIds: selectedProductIds,
+        linkUrl: link.trim() || '/shop',
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -384,27 +682,86 @@ function BannerDialog({
     }
   }
 
+  // Flatten all products & variants (both listed and unlisted)
+  const selectableItems: Array<{
+    id: string;
+    name: string;
+    imageUrl: string | null;
+    priceMinor: number;
+    badge: 'Product' | 'Listed' | 'Unlisted';
+  }> = [];
+
+  for (const p of adminProducts ?? []) {
+    const cleanProductName = (p.name || '').replace(/\{[^}]+\}/g, '').trim() || p.name;
+
+    if (!p.variants || p.variants.length === 0) {
+      selectableItems.push({
+        id: p.id,
+        name: cleanProductName,
+        imageUrl: p.imageUrl,
+        priceMinor: p.offerPriceMinor ?? p.priceMinor,
+        badge: 'Product',
+      });
+    } else {
+      for (const v of p.variants) {
+        // Resolve product name template: substitute {key} with variant's customVariable value
+        let resolvedName = p.name ?? '';
+        for (const [key, val] of Object.entries(v.customVariables ?? {})) {
+          resolvedName = resolvedName.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
+        }
+        resolvedName = resolvedName.replace(/\{[^}]+\}/g, '').replace(/\s{2,}/g, ' ').trim();
+
+        // Attribute option values as secondary info
+        const attrValues = (v.valueIds ?? [])
+          .map((id) => attrMap.get(id))
+          .filter(Boolean) as string[];
+        const secondaryPart = attrValues.join(' / ');
+
+        const displayName = secondaryPart
+          ? `${resolvedName} – ${secondaryPart}`
+          : resolvedName;
+
+        selectableItems.push({
+          id: v.id,
+          name: `${displayName}${v.sku ? ` (${v.sku})` : ''}`,
+          imageUrl: v.images?.[0] || p.imageUrl,
+          priceMinor: v.offerPriceMinor ?? v.priceMinor ?? p.priceMinor,
+          badge: v.listedSeparately ? 'Listed' : 'Unlisted',
+        });
+      }
+    }
+  }
+
+  const filteredItems = selectableItems.filter((item) =>
+    item.name.toLowerCase().includes(productSearch.toLowerCase()),
+  );
+
   return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{initial ? 'Edit banner' : 'Add banner'}</DialogTitle>
-        </DialogHeader>
+    <Drawer open onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent className="md:max-w-2xl">
+        <DrawerHeader>
+          <DrawerTitle>{initial ? 'Edit hero collection' : 'Add hero collection'}</DrawerTitle>
+        </DrawerHeader>
         <div className="space-y-4">
-          <div
-            className="relative w-full overflow-hidden rounded-lg border bg-muted"
-            style={{ aspectRatio: `${aspectWidth} / ${aspectHeight}` }}
-          >
-            {preview ? (
-              <Image src={preview} alt="Banner preview" width={800} height={450} unoptimized className="h-full w-full object-cover" />
-            ) : (
-              <div className="grid h-full place-items-center text-xs text-muted-foreground">Preview</div>
-            )}
+          {/* Desktop Preview */}
+          <div>
+            <Label className="text-xs font-semibold">Desktop Background Preview</Label>
+            <div
+              className="relative w-full mt-1.5 overflow-hidden rounded-xs border bg-muted"
+              style={{ aspectRatio: `${aspectWidth} / ${aspectHeight}` }}
+            >
+              {preview ? (
+                <Image src={preview} alt="Banner preview" width={800} height={450} unoptimized className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full place-items-center text-xs text-muted-foreground">Desktop Preview</div>
+              )}
+            </div>
           </div>
 
+          {/* Desktop Image Picker */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="bf-file">Banner image</Label>
+              <Label htmlFor="bf-file">Desktop Background Image</Label>
               {initial?.imageUrl && !file && (
                 <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">
                   Current: {initial.imageUrl.split('/').pop()}
@@ -414,20 +771,115 @@ function BannerDialog({
             <Input id="bf-file" type="file" accept="image/*" onChange={pickFile} />
           </div>
 
+          {/* Mobile Image Picker */}
           <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bf-mob-file">Mobile Background Image (Optional)</Label>
+              {initial?.mobileImageUrl && !mobFile && (
+                <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-mono">
+                  Current: {initial.mobileImageUrl.split('/').pop()}
+                </span>
+              )}
+            </div>
+            <Input id="bf-mob-file" type="file" accept="image/*" onChange={pickMobFile} />
+          </div>
+
+          {/* Title & Subtitle */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="bf-title">Title</Label>
+              <Input id="bf-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="EXPLORE" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="bf-subtitle">Collection / Subtitle</Label>
+              <Input id="bf-subtitle" value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="BOTTOMS" />
+            </div>
+          </div>
+
+          {/* Category Tags */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="bf-tags">Category Tags (comma-separated)</Label>
+            <Input id="bf-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="JOGGERS, JEANS, PANTS" />
+          </div>
+
+          {/* Click-through link */}
+          <div className="flex flex-col gap-1.5">
             <Label htmlFor="bf-link">Click-through link</Label>
-            <Input id="bf-link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="/shop?category=watches" />
+            <Input id="bf-link" value={link} onChange={(e) => setLink(e.target.value)} placeholder="/shop?category=bottoms" />
+          </div>
+
+          {/* Linked Products */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <Label>Linked Variants & Products (3 on desktop, 4 on mobile)</Label>
+              <span className="text-xs font-medium text-primary">
+                Selected: {selectedProductIds.length}
+              </span>
+            </div>
+            <Input
+              placeholder="Search by product or variant SKU..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+            />
+            <div className="max-h-56 overflow-y-auto divide-y rounded border bg-muted/20">
+              {filteredItems.map((item) => {
+                const checked = selectedProductIds.includes(item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleProduct(item.id)}
+                    className={`flex w-full items-center gap-3 p-2 text-left text-xs transition-colors hover:bg-muted ${
+                      checked ? 'bg-primary/10 font-semibold' : ''
+                    }`}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      onCheckedChange={() => toggleProduct(item.id)}
+                      className="rounded-xs"
+                    />
+                    <div className="relative size-10 shrink-0 overflow-hidden rounded bg-muted border">
+                      {item.imageUrl && (
+                        <Image
+                          src={mediaSrc(item.imageUrl)}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span
+                          className={`text-[9px] font-semibold px-1.5 py-0.2 rounded border ${
+                            item.badge === 'Listed'
+                              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                              : item.badge === 'Unlisted'
+                              ? 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+                              : 'bg-muted text-muted-foreground border-border'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                        <span className="text-muted-foreground font-mono">{money(item.priceMinor)}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
+        <div className="flex justify-end gap-2 pt-3 border-t mt-3">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={submit} disabled={busy || saving}>
             {busy || saving ? 'Saving…' : initial ? 'Save' : 'Add'}
           </Button>
         </div>
-      </DialogContent>
-    </Dialog>
+      </DrawerContent>
+    </Drawer>
   );
 }
 
@@ -463,9 +915,9 @@ function AnnouncementCard() {
         <CardTitle className="text-base">Announcement bar</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} className="size-4" />
-          Show the announcement bar
+        <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none">
+          <Checkbox checked={active} onCheckedChange={setActive} className="rounded-xs" />
+          <span>Show the announcement bar</span>
         </label>
 
         <div className="flex flex-col gap-2">
@@ -523,7 +975,7 @@ function FaqCard() {
         {faqs.length === 0 && <p className="text-sm text-muted-foreground">No questions yet — add one below.</p>}
 
         {faqs.map((f, i) => (
-          <div key={i} className="space-y-2 rounded-lg border p-3">
+          <div key={i} className="space-y-2 rounded-xs border p-3">
             <div className="flex items-center gap-2">
               <Input value={f.question} onChange={(e) => setAt(i, { question: e.target.value })} placeholder="Question" />
               <Button

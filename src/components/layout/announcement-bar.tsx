@@ -4,20 +4,17 @@ import { useEffect, useState } from 'react';
 import { useAnnouncement } from '@/features/catalog';
 import { cn } from '@/lib/utils';
 
-const DEFAULT_MESSAGES = [
-  'SAVE 10% ON YOUR FIRST ORDER',
-  'FREE SHIPPING OVER ₹999',
-];
-
 /** Fading promo banner above the header:
  * - Mobile: 1 item fading in & out.
  * - Desktop: 50%/50% split with vertical line locked in the exact center.
- * - Non-dismissible.
+ * - Non-dismissible. Only renders when active messages come from backend.
  */
 export function AnnouncementBar() {
-  const { data } = useAnnouncement();
+  const { data, isLoading } = useAnnouncement();
 
-  const messages = data?.messages?.length ? data.messages : DEFAULT_MESSAGES;
+  const messages = (data?.active && data?.messages?.length)
+    ? data.messages.filter((m) => m.trim().length > 0)
+    : [];
 
   // Mobile: cycles 1 message at a time.
   // Desktop: cycles a PAIR of messages at a time (advance by 2).
@@ -39,7 +36,9 @@ export function AnnouncementBar() {
     return () => clearInterval(interval);
   }, [messages.length]);
 
-  if (data && !data.active) return null;
+  if (isLoading || !data || !data.active || messages.length === 0) {
+    return null;
+  }
 
   // Mobile: current single message
   const mobileMsg = messages[mobileIndex];

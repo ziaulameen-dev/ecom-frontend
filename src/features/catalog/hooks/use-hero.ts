@@ -1,6 +1,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { HeroBanner } from '@/lib/types';
 import { catalogKeys } from '../keys';
 import {
   createHero,
@@ -30,7 +31,7 @@ export function useCreateHero() {
 export function useUpdateHero() {
   const inv = useHeroInvalidate();
   return useMutation({
-    mutationFn: ({ id, ...input }: { id: string } & Partial<{ imageUrl: string; linkUrl: string }>) =>
+    mutationFn: ({ id, ...input }: { id: string } & Partial<Omit<HeroBanner, 'id'>>) =>
       updateHero(id, input),
     onSuccess: inv,
   });

@@ -1,6 +1,6 @@
 'use client';
 
-import { api } from '@/lib/api-client';
+import { api, apiFetch, ApiError } from '@/lib/api-client';
 import type { CartView } from '@/lib/types';
 
 /**
@@ -10,8 +10,16 @@ import type { CartView } from '@/lib/types';
  */
 
 /** Current cart for the session/guest. */
-export function fetchCart() {
-  return api.get<CartView>('/api/cart');
+export async function fetchCart(): Promise<CartView> {
+  try {
+    return await api.get<CartView>('/api/cart');
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 401) {
+      // If refresh token is expired or dead, fallback to clean guest cart
+      return await apiFetch<CartView>('/api/cart', { auth: false });
+    }
+    throw e;
+  }
 }
 
 /** Add an item to the cart. */
@@ -31,4 +39,9 @@ export function updateCartItem(input: { itemId: string; quantity: number }) {
 /** Remove an item from the cart. */
 export function removeCartItem(itemId: string) {
   return api.del<CartView>(`/api/cart/items/${itemId}`);
+}
+
+/** Merge guest cart into authenticated user cart. */
+export function mergeCart() {
+  return api.post<CartView>('/api/cart/merge');
 }

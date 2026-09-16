@@ -34,24 +34,3 @@ export const cartId = {
   clear: () => canUse() && localStorage.removeItem(CART),
 };
 
-// Referral attribution — last-touch, kept for 30 days.
-const REF = `${PREFIX}_ref`;
-const REF_TTL = 30 * 24 * 3600 * 1000;
-export const referral = {
-  get(): string | null {
-    if (!canUse()) return null;
-    try {
-      const raw = localStorage.getItem(REF);
-      if (!raw) return null;
-      const { code, ts } = JSON.parse(raw) as { code: string; ts: number };
-      if (!code || Date.now() - ts > REF_TTL) { localStorage.removeItem(REF); return null; }
-      return code;
-    } catch {
-      return null;
-    }
-  },
-  set(code: string) {
-    if (canUse() && code) localStorage.setItem(REF, JSON.stringify({ code: code.toUpperCase(), ts: Date.now() }));
-  },
-  clear: () => canUse() && localStorage.removeItem(REF),
-};

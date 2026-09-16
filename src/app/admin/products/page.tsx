@@ -130,6 +130,9 @@ function ProductRow({ product, valueLabel }: { product: AdminProduct; valueLabel
   const minPrice = hasVariants ? Math.min(...variantPrices) : 0;
   const maxPrice = hasVariants ? Math.max(...variantPrices) : 0;
 
+  // Strip template placeholder tokens like {description} from product names
+  const cleanName = (product.name ?? '').replace(/\{[^}]+\}/g, '').replace(/\s{2,}/g, ' ').trim() || product.name;
+
   return (
     <>
     <tr className="border-b last:border-0 hover:bg-muted/30">
@@ -144,13 +147,13 @@ function ProductRow({ product, valueLabel }: { product: AdminProduct; valueLabel
           )}
           <div className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted/40">
             {product.imageUrl ? (
-              <Image src={mediaSrc(product.imageUrl)} alt={product.name} width={40} height={40} unoptimized className="h-full w-full object-cover" />
+              <Image src={mediaSrc(product.imageUrl)} alt={cleanName} width={40} height={40} unoptimized className="h-full w-full object-cover" />
             ) : (
               <ImageOff className="size-4 text-muted-foreground" />
             )}
           </div>
           <div className="min-w-0">
-            <Link href={`/admin/products/${product.id}`} className="block truncate font-medium hover:underline">{product.name}</Link>
+            <Link href={`/admin/products/${product.id}`} className="block truncate font-medium hover:underline">{cleanName}</Link>
             <div className="truncate text-xs text-muted-foreground">{product.slug ?? '—'}</div>
           </div>
         </div>
@@ -196,7 +199,7 @@ function ProductRow({ product, valueLabel }: { product: AdminProduct; valueLabel
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onClick={async () => { if (await confirm({ title: 'Delete product?', description: `"${product.name}" will be permanently removed.`, confirmText: 'Delete', destructive: true })) del.mutate(product.id); }}
+                onClick={async () => { if (await confirm({ title: 'Delete product?', description: `"${cleanName}" will be permanently removed.`, confirmText: 'Delete', destructive: true })) del.mutate(product.id); }}
               >
                 <Trash2 className="size-4" /> Delete
               </DropdownMenuItem>
@@ -205,42 +208,65 @@ function ProductRow({ product, valueLabel }: { product: AdminProduct; valueLabel
         </div>
       </td>
     </tr>
-    {expanded && product.variants.map((v) => (
-      <tr key={v.id} className="border-b border-l-2 border-l-muted-foreground/30 bg-muted/20 text-sm last:border-b-0">
-        <td className="py-2 pl-11 pr-4">
-          <div className="flex items-center gap-2">
-            {v.images[0] ? (
-              <Image src={mediaSrc(v.images[0])} alt="" width={32} height={32} unoptimized className="size-8 shrink-0 rounded border object-cover" />
-            ) : (
-              <span className="grid size-8 shrink-0 place-items-center rounded border bg-muted/40"><ImageOff className="size-3.5 text-muted-foreground" /></span>
-            )}
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-1">
-                {v.valueIds.map((id) => <span key={id} className="rounded bg-muted px-1.5 py-0.5 text-xs">{valueLabel.get(id) ?? id.slice(0, 6)}</span>)}
-                {v.isDefault && <Badge variant="secondary">default</Badge>}
-              </div>
-              {v.sku && <div className="mt-0.5 text-xs text-muted-foreground">SKU {v.sku}</div>}
-            </div>
-          </div>
-        </td>
-        <td className="px-4 py-2">
-          {v.offerPriceMinor != null ? (
+    {expanded && product.variants.map((v) => {
+      // Resolve the product name template: substitute {key} placeholders with
+      // this variant's customVariables values, then strip any leftover {…}.
+      let resolvedName = product.name ?? '';
+      for (const [key, val] of Object.entries(v.customVariables ?? {})) {
+        resolvedName = resolvedName.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
+      }
+      resolvedName = resolvedName.replace(/\{[^}]+\}/g, '').replace(/\s{2,}/g, ' ').trim();
+
+      // Attribute option values shown as secondary info after "–"
+      const attrLabels = v.valueIds.map((id) => valueLabel.get(id)).filter(Boolean) as string[];
+      const secondaryPart = attrLabels.join(' / ');
+
+      return (
+        <tr key={v.id} className="border-b border-l-2 border-l-muted-foreground/30 bg-muted/20 text-sm last:border-b-0">
+          <td className="py-2 pl-11 pr-4">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{money(v.offerPriceMinor)}</span>
-              <span className="text-xs text-muted-foreground line-through">{money(v.priceMinor)}</span>
+              {v.images[0] ? (
+                <Image src={mediaSrc(v.images[0])} alt="" width={32} height={32} unoptimized className="size-8 shrink-0 rounded border object-cover" />
+              ) : (
+                <span className="grid size-8 shrink-0 place-items-center rounded border bg-muted/40"><ImageOff className="size-3.5 text-muted-foreground" /></span>
+              )}
+              <div className="min-w-0">
+                {/* Resolved product name (template vars substituted) + attribute secondary info */}
+                <div className="font-medium text-sm">
+                  {resolvedName}
+                  {secondaryPart && (
+                    <span className="text-muted-foreground font-normal"> – {secondaryPart}</span>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                  {!resolvedName && !secondaryPart && (
+                    <span className="text-xs text-muted-foreground">No options</span>
+                  )}
+                  {v.isDefault && <Badge variant="secondary">default</Badge>}
+                  {v.sku && <div className="text-xs text-muted-foreground">SKU {v.sku}</div>}
+                </div>
+              </div>
             </div>
-          ) : (
-            <span className="font-medium">{money(v.priceMinor)}</span>
-          )}
-        </td>
-        <td className="px-4 py-2 text-muted-foreground">{v.stock}</td>
-        <td className="px-4 py-2" />
-        <td className="px-4 py-2">
-          {v.listedSeparately ? <Badge>Listed</Badge> : <Badge variant="secondary">Not listed</Badge>}
-        </td>
-        <td className="px-4 py-2" />
-      </tr>
-    ))}
+          </td>
+          <td className="px-4 py-2">
+            {v.offerPriceMinor != null ? (
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{money(v.offerPriceMinor)}</span>
+                <span className="text-xs text-muted-foreground line-through">{money(v.priceMinor)}</span>
+              </div>
+            ) : (
+              <span className="font-medium">{money(v.priceMinor)}</span>
+            )}
+          </td>
+          <td className="px-4 py-2 text-muted-foreground">{v.stock}</td>
+          <td className="px-4 py-2" />
+          <td className="px-4 py-2">
+            {v.listedSeparately ? <Badge>Listed</Badge> : <Badge variant="secondary">Not listed</Badge>}
+          </td>
+          <td className="px-4 py-2" />
+        </tr>
+      );
+    })}
     </>
   );
 }

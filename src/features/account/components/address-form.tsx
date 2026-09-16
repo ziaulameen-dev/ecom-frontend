@@ -131,7 +131,7 @@ export function AddressForm({
           )}
         </div>
         {autoFilledStatus && (
-          <div className="mt-1 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-[#7EC151] font-medium">
             <CheckCircle2 size={13} className="shrink-0" />
             <span><span className="hidden sm:inline">Auto-filled: </span>{autoFilledStatus}</span>
           </div>

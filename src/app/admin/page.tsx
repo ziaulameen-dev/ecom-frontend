@@ -41,7 +41,7 @@ export default function AdminDashboard() {
           ? Array.from({ length: stats.length }).map((_, i) => (
               <Card key={i}>
                 <CardContent className="flex items-center gap-4 p-5">
-                  <Skeleton className="size-11 shrink-0 rounded-lg" />
+                  <Skeleton className="size-11 shrink-0 rounded-xs" />
                   <div className="space-y-2">
                     <Skeleton className="h-7 w-24" />
                     <Skeleton className="h-3 w-20" />
@@ -53,7 +53,7 @@ export default function AdminDashboard() {
               <Link key={s.label} href={s.href}>
                 <Card className="transition-shadow hover:shadow-md">
                   <CardContent className="flex items-center gap-4 p-5">
-                    <div className="grid size-11 place-items-center rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+                    <div className="grid size-11 place-items-center rounded-xs bg-sidebar-accent text-sidebar-accent-foreground">
                       <s.icon className="size-5" />
                     </div>
                     <div>

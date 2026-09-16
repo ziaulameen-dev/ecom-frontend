@@ -1,14 +1,13 @@
 'use client';
 
 import {
-  ChevronRight, Gift, ImagePlus, LifeBuoy, LogOut, Mail,
-  MapPin, Package, Star, Tag, User as UserIcon, X,
+  AlertCircle, BadgePercent, Ban, Check, CheckCircle2, ChevronRight, Clock, Copy, Gift, ImagePlus, LifeBuoy, LogOut, Mail,
+  MapPin, Package, Percent, RotateCcw, ShoppingBag, Sparkles, Star, Tag, Truck, User as UserIcon, X,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { AuthImage } from '@/components/auth-image';
 import { confirm } from '@/components/confirm-dialog';
 import { RatingStars } from '@/components/rating-stars';
@@ -19,9 +18,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { OtpInput } from '@/components/ui/otp-input';
+import { useMediaQuery } from '@/lib/use-media-query';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -39,10 +42,7 @@ import {
   useMyOrders,
   useMyReviews,
   useMyReturns,
-  useReferral,
   useRequestEmailChange,
-  useRequestPayout,
-  useVerifyAccount,
   useReviewable,
   useSubmitReview,
   useUpdateProfile,
@@ -52,7 +52,8 @@ import {
 } from '@/features/account';
 import { AddressForm } from '@/features/account/components/address-form';
 import { ReturnForm } from '@/features/account/components/return-form';
-import type { ActiveCoupon, AdminReturn, OrderStatus, ReviewableProduct, User } from '@/lib/types';
+import { useProduct } from '@/features/catalog';
+import type { ActiveCoupon, AdminReturn, Order, OrderStatus, ReviewableProduct, User } from '@/lib/types';
 import { cn, formatDate, mediaSrc, money } from '@/lib/utils';
 
 const TABS = [
@@ -60,7 +61,6 @@ const TABS = [
   { key: 'orders', label: 'Manage Orders', icon: Package },
   { key: 'addresses', label: 'Manage Address', icon: MapPin },
   { key: 'coupons', label: 'Coupons', icon: Tag },
-  { key: 'referral', label: 'Refer & Earn', icon: Gift },
   { key: 'reviews', label: 'Reviews', icon: Star },
   { key: 'help', label: 'Help Center', icon: LifeBuoy },
 ] as const;
@@ -71,6 +71,14 @@ const statusVariant: Record<OrderStatus, 'default' | 'secondary' | 'success' | '
   pending: 'secondary', processing: 'secondary', paid: 'success', fulfilled: 'default',
   shipped: 'default', delivered: 'success', cancelled: 'destructive', failed: 'destructive', refunded: 'outline',
 };
+
+export default function AccountPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-5xl px-4 py-24 text-center text-muted-foreground">Loading account...</div>}>
+      <AccountInner />
+    </Suspense>
+  );
+}
 
 function AccountInner() {
   const router = useRouter();
@@ -96,7 +104,6 @@ function AccountInner() {
 
   async function handleLogout() {
     await logout.mutateAsync();
-    toast.success('Logged out');
     router.push('/');
   }
 
@@ -106,7 +113,6 @@ function AccountInner() {
       case 'orders': return <OrdersTab />;
       case 'addresses': return <AddressesTab />;
       case 'coupons': return <CouponsTab />;
-      case 'referral': return <ReferralTab />;
       case 'reviews': return <ReviewsTab authorName={me!.name} />;
       case 'help': return <HelpCenterTab />;
     }
@@ -115,7 +121,7 @@ function AccountInner() {
   const activeLabel = TABS.find((t) => t.key === rawTab)?.label ?? '';
 
   return (
-    <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8 py-10">
+    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 lg:px-8 py-10">
       <h1 className="hidden text-2xl font-semibold md:block">My account</h1>
 
       {/* Desktop — sidebar + content */}
@@ -126,7 +132,7 @@ function AccountInner() {
               key={t.key}
               onClick={() => router.push(`/account?tab=${t.key}`)}
               className={cn(
-                'flex items-center gap-2 rounded-sm border px-4 py-3 text-left text-sm font-medium transition-colors',
+                'flex items-center gap-2 rounded-xs border px-4 py-3 text-left text-sm font-medium transition-colors',
                 desktopTab === t.key
                   ? 'border-primary-button bg-primary-button text-white'
                   : 'bg-card hover:bg-accent',
@@ -138,7 +144,7 @@ function AccountInner() {
           <button
             onClick={handleLogout}
             disabled={logout.isPending}
-            className="flex items-center gap-2 rounded-sm border bg-card px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xs border bg-card px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
           >
             <LogOut className="size-4" /> Logout
           </button>
@@ -191,7 +197,7 @@ function MobileMenu({ me, onLogout, loggingOut }: { me: User; onLogout: () => vo
       {/* Profile summary — tap to edit personal information */}
       <button
         onClick={() => router.push('/account?tab=profile')}
-        className="flex w-full items-center gap-4 rounded-lg border bg-card p-4 text-left transition-colors hover:bg-accent"
+        className="flex w-full items-center gap-4 rounded-xs border bg-card p-4 text-left transition-colors hover:bg-accent"
       >
         <Avatar name={me.name} email={me.email} className="size-14 text-xl" />
         <div className="min-w-0 flex-1">
@@ -206,7 +212,7 @@ function MobileMenu({ me, onLogout, loggingOut }: { me: User; onLogout: () => vo
           <button
             key={t.key}
             onClick={() => router.push(`/account?tab=${t.key}`)}
-            className="flex items-center gap-2 rounded-sm border px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent"
+            className="flex items-center gap-2 rounded-xs border px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent"
           >
             <t.icon className="size-4 shrink-0" />
             {t.label}
@@ -215,7 +221,7 @@ function MobileMenu({ me, onLogout, loggingOut }: { me: User; onLogout: () => vo
         <button
           onClick={onLogout}
           disabled={loggingOut}
-          className="flex items-center gap-2 rounded-sm border px-4 py-3 text-left text-sm font-medium text-destructive transition-colors hover:bg-accent disabled:opacity-60"
+          className="flex items-center gap-2 rounded-xs border px-4 py-3 text-left text-sm font-medium text-destructive transition-colors hover:bg-accent disabled:opacity-60"
         >
           <LogOut className="size-4 shrink-0" />
           Logout
@@ -232,6 +238,7 @@ function PersonalInfoTab({ me }: { me: User }) {
     mobile: me.mobile ?? '',
     gender: me.gender ?? '',
   });
+  const [status, setStatus] = useState<{ ok: boolean; msg: string } | null>(null);
 
   // Only enable "Update changes" when something actually changed.
   const dirty =
@@ -241,15 +248,17 @@ function PersonalInfoTab({ me }: { me: User }) {
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    setStatus(null);
     try {
       await update.mutateAsync({
         name: form.name || undefined,
         mobile: form.mobile || undefined,
         gender: form.gender || undefined,
       });
-      toast.success('Profile updated');
+      setStatus({ ok: true, msg: 'Profile updated successfully' });
+      setTimeout(() => setStatus(null), 3000);
     } catch (err) {
-      toast.error((err as Error).message);
+      setStatus({ ok: false, msg: (err as Error).message });
     }
   }
 
@@ -261,7 +270,15 @@ function PersonalInfoTab({ me }: { me: User }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="name">Full name</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" />
+              <Input
+                id="name"
+                value={form.name}
+                onChange={(e) => {
+                  setForm({ ...form, name: e.target.value });
+                  if (status) setStatus(null);
+                }}
+                placeholder="Your name"
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -274,11 +291,26 @@ function PersonalInfoTab({ me }: { me: User }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="mobile">Mobile <span className="text-muted-foreground">(optional)</span></Label>
-              <Input id="mobile" type="tel" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} placeholder="+91 98765 43210" />
+              <Input
+                id="mobile"
+                type="tel"
+                value={form.mobile}
+                onChange={(e) => {
+                  setForm({ ...form, mobile: e.target.value });
+                  if (status) setStatus(null);
+                }}
+                placeholder="+91 98765 43210"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Gender</Label>
-              <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
+              <Select
+                value={form.gender}
+                onValueChange={(v) => {
+                  setForm({ ...form, gender: v });
+                  if (status) setStatus(null);
+                }}
+              >
                 <SelectTrigger className="w-full"><SelectValue placeholder="Select gender" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="female">Female</SelectItem>
@@ -288,9 +320,16 @@ function PersonalInfoTab({ me }: { me: User }) {
               </Select>
             </div>
           </div>
-          <Button type="submit" disabled={update.isPending || !dirty} variant="primary">
-            {update.isPending ? 'Saving…' : 'Update changes'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button type="submit" disabled={update.isPending || !dirty} variant="primary">
+              {update.isPending ? 'Saving…' : 'Update changes'}
+            </Button>
+            {status && (
+              <span className={cn('text-xs font-medium', status.ok ? 'text-[#117a7a] dark:text-[#42a3a3]' : 'text-red-600')}>
+                {status.msg}
+              </span>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>
@@ -305,347 +344,399 @@ function EmailChangeDialog({ currentEmail }: { currentEmail: string }) {
   const request = useRequestEmailChange();
   const verifyOld = useVerifyOldEmail();
   const verifyNew = useVerifyNewEmail();
+  const isDesktop = useMediaQuery('(min-width: 640px)');
 
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [newEmail, setNewEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [sentTo, setSentTo] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
-    if (!next) { setStep(1); setNewEmail(''); setOtp(''); setSentTo(''); }
+    if (!next) { setStep(1); setNewEmail(''); setOtp(''); setSentTo(''); setError(null); }
   }
 
   async function sendToCurrent() {
+    setError(null);
     try {
       const r = await request.mutateAsync();
       setSentTo(r.sentTo);
       setOtp('');
       setStep(2);
-      toast.success(`Code sent to ${r.sentTo}`);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { setError((e as Error).message); }
   }
 
   async function submitOld() {
+    setError(null);
     try {
       const r = await verifyOld.mutateAsync({ newEmail: newEmail.trim(), otp: otp.trim() });
       setSentTo(r.sentTo);
       setOtp('');
       setStep(3);
-      toast.success(`Code sent to ${r.sentTo}`);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { setError((e as Error).message); }
   }
 
   async function submitNew() {
+    setError(null);
     try {
       await verifyNew.mutateAsync({ otp: otp.trim() });
-      toast.success('Email updated');
       handleOpenChange(false);
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) { setError((e as Error).message); }
   }
 
+  const titleText = 'Change email';
+  const descText =
+    step === 1
+      ? `We'll send a verification code to your current email (${currentEmail}).`
+      : step === 2
+      ? `Enter the code sent to ${sentTo}, then your new email address.`
+      : `Enter the code sent to your new email (${sentTo}).`;
+
+  const formBody = (
+    <div className="space-y-4 pt-2">
+      {error && (
+        <div className="rounded-xs bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 font-medium text-center">
+          {error}
+        </div>
+      )}
+
+      {step === 1 && (
+        <Button
+          onClick={sendToCurrent}
+          disabled={request.isPending}
+          className="w-full bg-primary-button hover:bg-primary-button/90 text-white font-semibold"
+        >
+          {request.isPending ? 'Sending…' : 'Send verification code'}
+        </Button>
+      )}
+
+      {step === 2 && (
+        <form onSubmit={(e) => { e.preventDefault(); submitOld(); }} className="space-y-4">
+          <div className="space-y-1.5 flex flex-col items-center">
+            <OtpInput
+              value={otp}
+              onChange={(v) => {
+                setOtp(v);
+                if (error) setError(null);
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-email" className="text-xs font-semibold">New email address</Label>
+            <Input
+              id="new-email"
+              type="email"
+              required
+              value={newEmail}
+              onChange={(e) => {
+                setNewEmail(e.target.value);
+                if (error) setError(null);
+              }}
+              placeholder="new@example.com"
+              className="text-xs sm:text-sm"
+            />
+          </div>
+          <Button
+            type="submit"
+            className="w-full bg-primary-button hover:bg-primary-button/90 text-white font-semibold"
+            disabled={verifyOld.isPending || otp.trim().length < 6 || !newEmail.trim()}
+          >
+            {verifyOld.isPending ? 'Verifying…' : 'Continue'}
+          </Button>
+        </form>
+      )}
+
+      {step === 3 && (
+        <form onSubmit={(e) => { e.preventDefault(); submitNew(); }} className="space-y-4">
+          <div className="flex flex-col items-center gap-2.5">
+            <Label className="self-start text-xs font-semibold">Code from new email</Label>
+            <OtpInput
+              value={otp}
+              onChange={(v) => {
+                setOtp(v);
+                if (error) setError(null);
+              }}
+              onComplete={() => submitNew()}
+              autoFocus
+            />
+          </div>
+          <Button
+            type="submit"
+            className="w-full bg-primary-button hover:bg-primary-button/90 text-white font-semibold"
+            disabled={verifyNew.isPending || otp.trim().length < 6}
+          >
+            {verifyNew.isPending ? 'Updating…' : 'Update email'}
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <button type="button" onClick={() => setOpen(true)} className="text-xs font-medium text-primary-button hover:underline">
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs font-medium text-primary-button hover:underline"
+      >
         Change
       </button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Change email</DialogTitle>
-          <DialogDescription>
-            {step === 1 && `We'll send a verification code to your current email (${currentEmail}).`}
-            {step === 2 && `Enter the code sent to ${sentTo}, then your new email address.`}
-            {step === 3 && `Enter the code sent to your new email (${sentTo}).`}
-          </DialogDescription>
-        </DialogHeader>
 
-        {step === 1 && (
-          <Button onClick={sendToCurrent} disabled={request.isPending}>
-            {request.isPending ? 'Sending…' : 'Send verification code'}
-          </Button>
-        )}
-
-        {step === 2 && (
-          <form onSubmit={(e) => { e.preventDefault(); submitOld(); }} className="space-y-4">
-            <div className="space-y-1.5">
-              <OtpInput value={otp} onChange={setOtp} autoFocus />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="new-email">New email address</Label>
-              <Input id="new-email" type="email" required value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new@example.com" />
-            </div>
-            <Button type="submit" className="w-full" disabled={verifyOld.isPending || otp.trim().length < 6 || !newEmail.trim()}>
-              {verifyOld.isPending ? 'Verifying…' : 'Continue'}
-            </Button>
-          </form>
-        )}
-
-        {step === 3 && (
-          <form onSubmit={(e) => { e.preventDefault(); submitNew(); }} className="space-y-4">
-            <div className="flex flex-col items-center gap-2.5">
-              <Label className="self-start">Code from new email</Label>
-              <OtpInput value={otp} onChange={setOtp} onComplete={() => submitNew()} autoFocus />
-            </div>
-            <Button type="submit" className="w-full" disabled={verifyNew.isPending || otp.trim().length < 6}>
-              {verifyNew.isPending ? 'Updating…' : 'Update email'}
-            </Button>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+      {isDesktop ? (
+        <Dialog open={open} onOpenChange={handleOpenChange}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{titleText}</DialogTitle>
+              <DialogDescription>{descText}</DialogDescription>
+            </DialogHeader>
+            {formBody}
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Drawer open={open} onOpenChange={handleOpenChange}>
+          <DrawerContent className="px-5 pt-3 pb-8 rounded-t-2xl max-h-[85vh] overflow-y-auto">
+            <DrawerHeader className="text-left pb-2">
+              <DrawerTitle>{titleText}</DrawerTitle>
+              <DrawerDescription>{descText}</DrawerDescription>
+            </DrawerHeader>
+            {formBody}
+          </DrawerContent>
+        </Drawer>
+      )}
+    </>
   );
 }
 
 function CouponsTab() {
   const { data: coupons, isLoading } = useCoupons();
 
-  if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="h-6 w-48 animate-pulse rounded-xs bg-muted" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-36 animate-pulse rounded-xs border border-neutral-200 dark:border-neutral-800 bg-muted/30" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (!coupons?.length) {
     return (
-      <Card>
-        <CardContent className="py-16 text-center">
-          <Tag className="mx-auto size-8 text-muted-foreground" />
-          <p className="mt-3 text-sm text-muted-foreground">No coupons available right now. Check back soon!</p>
+      <Card className="rounded-xs border border-neutral-200 dark:border-neutral-800">
+        <CardContent className="py-20 text-center">
+          <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary-button/10 text-primary-button mb-4">
+            <BadgePercent className="size-7" />
+          </div>
+          <h3 className="text-base font-semibold text-foreground">No Coupons Available</h3>
+          <p className="mt-1.5 text-xs text-muted-foreground max-w-sm mx-auto">
+            There are no active discount coupons at the moment. Keep an eye out for seasonal promotions, flash sales, and exclusive vouchers!
+          </p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {coupons.map((c) => <CouponCard key={c.code} coupon={c} />)}
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-neutral-200/80 dark:border-neutral-800">
+        <div>
+          <h2 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <span>Available Coupons &amp; Offers</span>
+            <Badge variant="secondary" className="rounded-xs text-[11px] font-semibold">
+              {coupons.length}
+            </Badge>
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Copy any coupon code below and apply it at checkout to enjoy instant savings.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {coupons.map((c) => (
+          <CouponCard key={c.code} coupon={c} />
+        ))}
+      </div>
     </div>
   );
 }
 
 function CouponCard({ coupon }: { coupon: ActiveCoupon }) {
-  const off = coupon.type === 'percent'
-    ? `${coupon.value}% OFF`
-    : `${money(coupon.value, 'INR')} OFF`;
+  const [copied, setCopied] = useState(false);
+  const isPercent = coupon.type === 'percent';
+  const discountPrimary = isPercent ? `${coupon.value}%` : money(coupon.value, 'INR');
+  const discountLabel = isPercent ? 'OFF' : 'FLAT OFF';
+  const isAvailable = coupon.isAvailable !== false;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-dashed p-4">
-      <div className="min-w-0">
-        <div className="text-base font-semibold">{off}</div>
-        <div className="mt-0.5 font-mono text-sm">{coupon.code}</div>
-        <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-          {coupon.minSubtotalMinor > 0 && <div>Min. spend {money(coupon.minSubtotalMinor, 'INR')}</div>}
-          {coupon.type === 'percent' && coupon.maxDiscountMinor != null && (
-            <div>Up to {money(coupon.maxDiscountMinor, 'INR')} off</div>
-          )}
-          {coupon.expiresAt && <div>Expires {formatDate(coupon.expiresAt)}</div>}
+    <div
+      className={cn(
+        'group relative flex flex-col sm:flex-row overflow-hidden rounded-xs border transition-all',
+        isAvailable
+          ? 'border-neutral-200 dark:border-neutral-800 bg-card hover:border-neutral-300 dark:hover:border-neutral-700 shadow-xs hover:shadow-sm'
+          : 'border-neutral-200/60 dark:border-neutral-800/60 bg-muted/20 opacity-60 grayscale-[25%]',
+      )}
+    >
+      {/* Left Voucher Stub / Badge */}
+      <div
+        className={cn(
+          'relative flex sm:flex-col items-center justify-between sm:justify-center p-4 sm:p-5 border-b sm:border-b-0 sm:border-r border-dashed border-neutral-200 dark:border-neutral-800 sm:w-36 shrink-0 text-center',
+          isAvailable
+            ? 'bg-gradient-to-br from-primary-button/10 via-primary-button/5 to-transparent'
+            : 'bg-muted/40',
+        )}
+      >
+        <div className="flex sm:flex-col items-center gap-1.5 sm:gap-0">
+          <div className="flex items-baseline justify-center">
+            <span
+              className={cn(
+                'text-2xl sm:text-3xl font-black tracking-tight',
+                isAvailable ? 'text-foreground' : 'text-muted-foreground',
+              )}
+            >
+              {discountPrimary}
+            </span>
+          </div>
+          <span
+            className={cn(
+              'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs sm:mt-1',
+              isAvailable
+                ? 'text-primary-button bg-primary-button/10'
+                : 'text-muted-foreground bg-muted',
+            )}
+          >
+            {isAvailable ? discountLabel : 'UNAVAILABLE'}
+          </span>
+        </div>
+
+        <div className="sm:hidden flex items-center">
+          <span className="font-mono text-xs font-bold tracking-widest text-muted-foreground bg-background px-2.5 py-1 rounded-xs border border-dashed border-neutral-300 dark:border-neutral-700">
+            {coupon.code}
+          </span>
         </div>
       </div>
-      <Button
-        variant="outline"
-        size="sm"
-        className="shrink-0"
-        onClick={() => {
-          navigator.clipboard?.writeText(coupon.code);
-          toast.success(`Copied "${coupon.code}"`);
-        }}
-      >
-        Copy
-      </Button>
+
+      {/* Right Details Section */}
+      <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between gap-3 min-w-0">
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="hidden sm:flex items-center gap-2">
+              <span
+                className={cn(
+                  'font-mono text-xs font-bold tracking-widest px-3 py-1 rounded-xs border border-dashed select-all',
+                  isAvailable
+                    ? 'text-foreground bg-muted/60 border-neutral-300 dark:border-neutral-700'
+                    : 'text-muted-foreground bg-muted/30 border-neutral-200 dark:border-neutral-800',
+                )}
+              >
+                {coupon.code}
+              </span>
+            </div>
+
+            {isAvailable ? (
+              <Button
+                size="sm"
+                variant={copied ? 'default' : 'outline'}
+                className={cn(
+                  'rounded-xs h-8 text-xs font-medium transition-colors w-full sm:w-auto shrink-0',
+                  copied
+                    ? 'bg-[#7EC151] hover:bg-[#7EC151]/90 text-white border-transparent'
+                    : 'border-neutral-300 dark:border-neutral-700 hover:bg-muted',
+                )}
+                onClick={() => {
+                  navigator.clipboard?.writeText(coupon.code);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? (
+                  <>
+                    <Check className="size-3.5 mr-1" strokeWidth={2.5} />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5 mr-1 text-muted-foreground" />
+                    <span>Copy Code</span>
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                disabled
+                variant="outline"
+                className="rounded-xs h-8 text-xs font-medium w-full sm:w-auto shrink-0 cursor-not-allowed opacity-60 bg-muted/40 border-neutral-200 dark:border-neutral-800 text-muted-foreground"
+              >
+                <Ban className="size-3.5 mr-1" />
+                <span>{coupon.unavailableReason || 'Unavailable'}</span>
+              </Button>
+            )}
+          </div>
+
+          <p
+            className={cn(
+              'text-xs font-medium pt-0.5',
+              isAvailable ? 'text-foreground' : 'text-muted-foreground',
+            )}
+          >
+            {isPercent
+              ? `Get ${coupon.value}% discount on your order`
+              : `Flat ${money(coupon.value, 'INR')} discount on your order`}
+          </p>
+
+          {!isAvailable && (
+            <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-medium pt-0.5">
+              <AlertCircle className="size-3.5 shrink-0" />
+              <span>{coupon.unavailableReason || 'This coupon is not available for your account.'}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Conditions Badges */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-muted-foreground">
+          {coupon.minSubtotalMinor > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
+              <ShoppingBag className="size-3 text-muted-foreground shrink-0" />
+              <span>Min. spend {money(coupon.minSubtotalMinor, 'INR')}</span>
+            </span>
+          )}
+          {coupon.type === 'percent' && coupon.maxDiscountMinor != null && (
+            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
+              <Percent className="size-3 text-muted-foreground shrink-0" />
+              <span>Max savings {money(coupon.maxDiscountMinor, 'INR')}</span>
+            </span>
+          )}
+          {coupon.maxPerUser != null && (
+            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
+              <span>{coupon.usedCount ? `Used ${coupon.usedCount}/${coupon.maxPerUser}` : `${coupon.maxPerUser} per user`}</span>
+            </span>
+          )}
+          {coupon.expiresAt && (
+            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
+              <Clock className="size-3 text-muted-foreground shrink-0" />
+              <span>Expires {formatDate(coupon.expiresAt)}</span>
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function StatCard({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="rounded-lg border p-4">
+    <div className="rounded-xs border p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 text-xl font-semibold">{value}</div>
       {note && <div className="mt-0.5 text-xs text-muted-foreground">{note}</div>}
     </div>
-  );
-}
-
-const rupees = (m: number) => `₹${(m / 100).toFixed(0)}`;
-
-function ReferralTab() {
-  const { data, isLoading } = useReferral();
-
-  if (isLoading || !data) return <p className="text-muted-foreground">Loading…</p>;
-
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const link = `${origin}/?ref=${data.code}`;
-  const remaining = Math.max(0, data.unlockThreshold - data.confirmedCount);
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="p-6">
-          <div className="text-sm text-muted-foreground">Your referral code</div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="rounded-md border border-dashed px-3 py-1.5 font-mono text-lg font-semibold tracking-widest">{data.code}</span>
-            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard?.writeText(data.code); toast.success('Code copied'); }}>Copy code</Button>
-            <Button variant="primary" size="sm" onClick={() => { navigator.clipboard?.writeText(link); toast.success('Share link copied'); }}>Copy share link</Button>
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            Share your link and earn <span className="font-medium text-foreground">{rupees(data.commissionMinor)}</span> for every order your friends place.
-            {!data.unlocked && ` Unlock your balance after ${data.unlockThreshold} confirmed referrals.`}
-          </p>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <StatCard label="Available balance" value={rupees(data.balanceMinor)} note={data.maturingMinor > 0 ? `${rupees(data.maturingMinor)} maturing after the ${data.returnDays}-day return window` : `${rupees(data.totalEarnedMinor)} earned`} />
-        <StatCard
-          label={data.unlocked ? 'Withdrawable' : 'Locked'}
-          value={data.unlocked ? rupees(data.availableMinor) : rupees(data.balanceMinor)}
-          note={data.unlocked ? 'Spend at checkout or withdraw' : `${remaining} more referral${remaining === 1 ? '' : 's'} to unlock`}
-        />
-        <StatCard label="Referrals" value={String(data.confirmedCount)} note={`${data.pendingCount} pending`} />
-      </div>
-
-      {data.unlocked && data.availableMinor >= data.minPayoutMinor && (
-        <PayoutForm minPayoutMinor={data.minPayoutMinor} availableMinor={data.availableMinor} verifyEnabled={data.verifyEnabled} />
-      )}
-
-      <Card>
-        <CardHeader><CardTitle>Your referrals</CardTitle></CardHeader>
-        <CardContent>
-          {data.referrals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No referrals yet — share your link to start earning.</p>
-          ) : (
-            <div className="divide-y text-sm">
-              {data.referrals.map((r) => (
-                <div key={r.id} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="font-mono">{r.orderReference ?? 'Order'}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {r.status === 'confirmed' && r.maturesAt ? `Matures ${formatDate(r.maturesAt)}` : formatDate(r.createdAt)}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{rupees(r.commissionMinor)}</span>
-                    <Badge variant={r.status === 'matured' ? 'success' : r.status === 'void' ? 'destructive' : 'secondary'}>
-                      {r.status === 'confirmed' ? 'held' : r.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {data.payouts.length > 0 && (
-        <Card>
-          <CardHeader><CardTitle>Payout requests</CardTitle></CardHeader>
-          <CardContent>
-            <div className="divide-y text-sm">
-              {data.payouts.map((p) => (
-                <div key={p.id} className="flex items-center justify-between py-2.5">
-                  <div>
-                    <div className="text-xs uppercase text-muted-foreground">{p.method}{p.verifiedName ? ` · ${p.verifiedName}` : ''}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(p.createdAt)}</div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{rupees(p.amountMinor)}</span>
-                    <Badge variant={p.status === 'paid' ? 'success' : p.status === 'rejected' ? 'destructive' : 'secondary'}>{p.status}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-function PayoutForm({ minPayoutMinor, availableMinor, verifyEnabled }: { minPayoutMinor: number; availableMinor: number; verifyEnabled: boolean }) {
-  const payout = useRequestPayout();
-  const verify = useVerifyAccount();
-  const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'upi' | 'bank'>('upi');
-  const [upiId, setUpiId] = useState('');
-  const [accountName, setAccountName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [ifsc, setIfsc] = useState('');
-  const [verifiedName, setVerifiedName] = useState<string | null>(null);
-
-  const account = () =>
-    method === 'upi'
-      ? { method, upiId: upiId.trim() }
-      : { method, accountName: accountName.trim(), accountNumber: accountNumber.trim(), ifsc: ifsc.trim().toUpperCase() };
-  const filled = method === 'upi'
-    ? !!upiId.trim()
-    : !!accountName.trim() && !!accountNumber.trim() && !!ifsc.trim();
-  const reset = () => setVerifiedName(null);
-
-  async function onVerify() {
-    try {
-      const r = await verify.mutateAsync(account());
-      if (!r.available) { toast.message('Verification isn’t enabled — your details will be saved as entered.'); return; }
-      if (r.valid) { setVerifiedName(r.name ?? null); toast.success(r.name ? `Verified: ${r.name}` : 'Account verified'); }
-      else { setVerifiedName(null); toast.error(r.message ?? 'Could not verify this account'); }
-    } catch (e) { toast.error((e as Error).message); }
-  }
-
-  async function submit() {
-    const paise = Math.round(Number(amount) * 100);
-    if (!paise || paise <= 0) { toast.error('Enter an amount'); return; }
-    if (!filled) { toast.error('Enter your payout details'); return; }
-    try {
-      await payout.mutateAsync({ amountMinor: paise, ...account() });
-      toast.success('Payout requested');
-      setAmount(''); setUpiId(''); setAccountName(''); setAccountNumber(''); setIfsc(''); reset();
-    } catch (e) { toast.error((e as Error).message); }
-  }
-
-  return (
-    <Card>
-      <CardHeader><CardTitle>Request a payout</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">Minimum {rupees(minPayoutMinor)}. You can also spend your balance at checkout.</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label>Amount (₹)</Label>
-            <Input type="number" placeholder={`Max ${rupees(availableMinor)}`} value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Payout to</Label>
-            <Select value={method} onValueChange={(v) => { setMethod(v as 'upi' | 'bank'); reset(); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="upi">UPI ID</SelectItem>
-                <SelectItem value="bank">Bank account</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {method === 'upi' ? (
-          <div className="space-y-1.5">
-            <Label>UPI ID</Label>
-            <Input placeholder="name@bank" value={upiId} onChange={(e) => { setUpiId(e.target.value); reset(); }} />
-          </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5 sm:col-span-2"><Label>Account holder name</Label><Input value={accountName} onChange={(e) => { setAccountName(e.target.value); reset(); }} /></div>
-            <div className="space-y-1.5"><Label>Account number</Label><Input value={accountNumber} onChange={(e) => { setAccountNumber(e.target.value); reset(); }} /></div>
-            <div className="space-y-1.5"><Label>IFSC</Label><Input value={ifsc} onChange={(e) => { setIfsc(e.target.value.toUpperCase()); reset(); }} /></div>
-          </div>
-        )}
-
-        {verifiedName && (
-          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-2.5 text-sm text-emerald-600 dark:text-emerald-400">
-            Account holder: <span className="font-medium">{verifiedName}</span>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          {verifyEnabled && (
-            <Button variant="outline" onClick={onVerify} disabled={!filled || verify.isPending}>{verify.isPending ? 'Verifying…' : 'Verify account'}</Button>
-          )}
-          <Button variant="primary" onClick={submit} disabled={payout.isPending}>{payout.isPending ? 'Requesting…' : 'Request payout'}</Button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -727,10 +818,12 @@ function ReviewForm({
   const upload = useUploadProductImage();
   const [uploading, setUploading] = useState(false);
   const [f, setF] = useState({ rating: 5, title: '', body: '', images: [] as string[] });
+  const [error, setError] = useState<string | null>(null);
 
   async function addImages(files: FileList | null) {
     if (!files?.length) return;
     setUploading(true);
+    setError(null);
     try {
       const urls: string[] = [];
       for (const file of Array.from(files)) {
@@ -740,13 +833,14 @@ function ReviewForm({
       }
       setF((s) => ({ ...s, images: [...s.images, ...urls].slice(0, 8) }));
     } catch (e) {
-      toast.error((e as Error).message);
+      setError((e as Error).message);
     } finally {
       setUploading(false);
     }
   }
 
   async function send() {
+    setError(null);
     try {
       await submit.mutateAsync({
         productId: product.productId,
@@ -756,15 +850,17 @@ function ReviewForm({
         authorName: authorName || undefined,
         images: f.images,
       });
-      toast.success('Thanks for your review!');
       onDone();
     } catch (e) {
-      toast.error((e as Error).message);
+      setError((e as Error).message);
     }
   }
 
   return (
     <div className="mt-2 space-y-3 rounded-lg border p-4">
+      {error && (
+        <p className="text-xs text-red-600 font-medium">{error}</p>
+      )}
       <div className="flex items-center gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" onClick={() => setF({ ...f, rating: n })} aria-label={`${n} star`}>
@@ -772,8 +868,23 @@ function ReviewForm({
           </button>
         ))}
       </div>
-      <Input placeholder="Title (optional)" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
-      <Textarea className="min-h-24" placeholder="Share your experience…" value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} />
+      <Input
+        placeholder="Title (optional)"
+        value={f.title}
+        onChange={(e) => {
+          setF({ ...f, title: e.target.value });
+          if (error) setError(null);
+        }}
+      />
+      <Textarea
+        className="min-h-24"
+        placeholder="Share your experience…"
+        value={f.body}
+        onChange={(e) => {
+          setF({ ...f, body: e.target.value });
+          if (error) setError(null);
+        }}
+      />
 
       <div className="flex flex-wrap gap-2">
         {f.images.map((url) => (
@@ -821,7 +932,7 @@ function HelpCenterTab() {
           <Link
             key={title}
             href={href}
-            className="flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-accent"
+            className="flex items-center gap-3 rounded-xs border p-4 transition-colors hover:bg-accent"
           >
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-button/10 text-primary-button">
               <Icon className="size-5" />
@@ -848,89 +959,358 @@ const returnBadge: Record<string, 'default' | 'secondary' | 'success' | 'destruc
   requested: 'secondary', approved: 'default', received: 'default', refunded: 'success', rejected: 'destructive',
 };
 
+function OrderStatusPill({ status }: { status: OrderStatus }) {
+  switch (status) {
+    case 'paid':
+    case 'delivered':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#7EC151]/15 text-[#5e9637] dark:text-[#7EC151] border border-[#7EC151]/30 capitalize">
+          <CheckCircle2 className="size-3.5" />
+          {status}
+        </span>
+      );
+    case 'shipped':
+    case 'fulfilled':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#117a7a]/15 text-[#117a7a] dark:text-[#42a3a3] border border-[#117a7a]/30 capitalize">
+          <Truck className="size-3.5" />
+          {status}
+        </span>
+      );
+    case 'processing':
+    case 'pending':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 capitalize">
+          <Clock className="size-3.5" />
+          {status}
+        </span>
+      );
+    case 'cancelled':
+    case 'failed':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30 capitalize">
+          <AlertCircle className="size-3.5" />
+          {status}
+        </span>
+      );
+    case 'refunded':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30 capitalize">
+          <RotateCcw className="size-3.5" />
+          {status}
+        </span>
+      );
+    default:
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border capitalize">
+          {status}
+        </span>
+      );
+  }
+}
+
+function OrderItemThumbnail({
+  productId,
+  variantId,
+  name,
+  imageUrl,
+}: {
+  productId: string;
+  variantId?: string | null;
+  name: string;
+  imageUrl?: string | null;
+}) {
+  const { data: product } = useProduct(productId);
+
+  const resolvedImg =
+    imageUrl ||
+    (variantId ? product?.variants?.find((v) => v.id === variantId)?.images?.[0] : null) ||
+    product?.imageUrl ||
+    product?.media?.[0]?.url ||
+    null;
+
+  return (
+    <div className="relative size-12 xs:size-14 rounded-xs bg-muted/60 border border-border/50 overflow-hidden flex items-center justify-center shrink-0 text-muted-foreground">
+      {resolvedImg ? (
+        <Image
+          src={mediaSrc(resolvedImg)}
+          alt={name}
+          fill
+          className="object-cover"
+          sizes="56px"
+        />
+      ) : (
+        <ShoppingBag className="size-5 text-[#117a7a]" />
+      )}
+    </div>
+  );
+}
+
 function OrdersTab() {
   const { data: orders, isLoading } = useMyOrders();
   const { data: returns } = useMyReturns();
   const cancel = useCancelOrder();
   const [returningId, setReturningId] = useState<string | null>(null);
+  const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
-  if (isLoading) return <p className="text-muted-foreground">Loading orders…</p>;
-  if (!orders?.length) return <p className="text-muted-foreground">No orders yet.</p>;
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2].map((i) => (
+          <Card key={i} className="p-4 sm:p-5 rounded-xs">
+            <div className="flex justify-between items-center mb-4">
+              <div className="h-5 w-32 bg-muted rounded-xs animate-pulse" />
+              <div className="h-5 w-20 bg-muted rounded-full animate-pulse" />
+            </div>
+            <div className="h-16 w-full bg-muted/60 rounded-xs mb-3 animate-pulse" />
+            <div className="h-5 w-28 bg-muted rounded-xs animate-pulse" />
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (!orders?.length) {
+    return (
+      <Card className="py-12 px-4 text-center rounded-xs">
+        <Package className="mx-auto size-12 text-muted-foreground stroke-1 mb-3" />
+        <h3 className="font-semibold text-base text-foreground">No orders found</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+          You haven&apos;t placed any orders yet. Discover our collection and treat yourself!
+        </p>
+        <Link href="/shop" className="inline-block mt-4">
+          <Button size="sm" className="font-bold text-xs uppercase tracking-wider bg-primary-button hover:bg-primary-button/90 text-white">
+            Start Shopping
+          </Button>
+        </Link>
+      </Card>
+    );
+  }
 
   const returnFor = (orderId: string): AdminReturn | undefined =>
     returns?.find((r) => r.orderId === orderId);
 
+  async function handleConfirmCancel() {
+    if (!cancellingOrder) return;
+    try {
+      await cancel.mutateAsync({ id: cancellingOrder.id, reason: cancelReason.trim() || undefined });
+      setCancellingOrder(null);
+      setCancelReason('');
+    } catch {}
+  }
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-5">
       {orders.map((o) => {
         const ret = returnFor(o.id);
+        const refText = o.reference ?? `#${o.id.slice(0, 8).toUpperCase()}`;
+
         return (
-          <Card key={o.id}>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-sm">{o.reference ?? `#${o.id.slice(0, 8)}`}</span>
-                <Badge variant={statusVariant[o.status] ?? 'secondary'}>{o.status}</Badge>
+          <Card key={o.id} className="overflow-hidden border shadow-xs rounded-xs">
+            {/* Header with Order ID, Date, Status */}
+            <div className="bg-muted/40 px-3.5 py-3 sm:px-5 sm:py-3.5 border-b flex flex-wrap items-center justify-between gap-2.5">
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-foreground tracking-tight">
+                    {refText}
+                  </span>
+                  <OrderStatusPill status={o.status} />
+                </div>
+                <p className="text-[11px] xs:text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="size-3 text-muted-foreground" />
+                  Placed on {formatDate(o.createdAt)}
+                </p>
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">{formatDate(o.createdAt)}</div>
-              <div className="mt-3 space-y-1 text-sm">
+
+              <div className="text-right">
+                <p className="text-[10px] xs:text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Total Amount</p>
+                <p className="text-xs xs:text-sm font-bold text-foreground">{money(o.totalMinor, o.currency)}</p>
+              </div>
+            </div>
+
+            {/* Items List */}
+            <CardContent className="p-3.5 sm:p-5 space-y-3">
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
                 {o.items.map((it, i) => (
-                  <div key={i} className="flex justify-between text-muted-foreground">
-                    <span>{it.name}{it.variantLabel ? ` · ${it.variantLabel}` : ''} × {it.quantity}</span>
-                    <span>{money(it.unitAmountMinor * it.quantity, o.currency)}</span>
+                  <div key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <OrderItemThumbnail
+                      productId={it.productId}
+                      variantId={it.variantId}
+                      name={it.name}
+                      imageUrl={it.imageUrl}
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/product/${it.productId}`}
+                        className="font-bold text-xs xs:text-sm text-foreground hover:text-primary-button hover:underline line-clamp-1 transition-colors"
+                      >
+                        {it.name}
+                      </Link>
+                      {it.variantLabel && (
+                        <p className="text-[10px] xs:text-xs text-muted-foreground font-medium truncate mt-0.5">
+                          {it.variantLabel}
+                        </p>
+                      )}
+                      <p className="text-[10px] xs:text-xs text-muted-foreground mt-0.5">
+                        Qty: <span className="font-semibold text-foreground">{it.quantity}</span> × {money(it.unitAmountMinor, o.currency)}
+                      </p>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className="font-bold text-xs xs:text-sm text-foreground">
+                        {money(it.unitAmountMinor * it.quantity, o.currency)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
-              <Separator className="my-3" />
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-semibold">{money(o.totalMinor, o.currency)}</span>
+
+              {/* Shipping Address snippet if present */}
+              {o.shippingAddress && (
+                <div className="pt-2.5 border-t flex items-start gap-2 text-[11px] xs:text-xs text-muted-foreground">
+                  <MapPin className="size-3.5 shrink-0 text-muted-foreground mt-0.5" />
+                  <span className="truncate">
+                    Delivery to <strong className="font-semibold text-foreground">{o.shippingAddress.fullName}</strong> • {o.shippingAddress.line1}, {o.shippingAddress.city} {o.shippingAddress.postalCode}
+                  </span>
+                </div>
+              )}
+
+              {/* Action Buttons & Return info */}
+              <div className="pt-2.5 border-t flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-1.5 text-[11px] xs:text-xs text-muted-foreground">
+                  <span>{o.items.length} {o.items.length === 1 ? 'item' : 'items'}</span>
+                  {o.shippingMinor === 0 && <span className="text-[#7EC151] font-semibold">• FREE Delivery</span>}
+                </div>
+
                 <div className="flex items-center gap-2">
                   {CANCELLABLE.includes(o.status) && (
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8 text-xs font-semibold text-destructive hover:bg-destructive/10 border-destructive/30"
                       disabled={cancel.isPending}
                       onClick={() => {
-                        const reason = window.prompt('Reason for cancelling? (optional)');
-                        if (reason === null) return;
-                        cancel.mutate(
-                          { id: o.id, reason: reason || undefined },
-                          { onSuccess: () => toast.success('Order cancelled'), onError: (e) => toast.error((e as Error).message) },
-                        );
+                        setCancellingOrder(o);
+                        setCancelReason('');
                       }}
                     >
-                      Cancel
+                      Cancel Order
                     </Button>
                   )}
                   {RETURNABLE.includes(o.status) && !ret && returningId !== o.id && (
-                    <Button variant="outline" size="sm" onClick={() => setReturningId(o.id)}>Request return</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-semibold"
+                      onClick={() => setReturningId(o.id)}
+                    >
+                      Request Return
+                    </Button>
                   )}
+                  <Link href="/shop">
+                    <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground">
+                      Shop More
+                    </Button>
+                  </Link>
                 </div>
               </div>
 
+              {/* Return Details Card if return exists */}
               {ret && (
-                <div className="mt-3 rounded-lg border p-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Return:</span>
-                    <Badge variant={returnBadge[ret.status] ?? 'secondary'}>{ret.status}</Badge>
-                    {ret.refundMinor > 0 && <span className="text-xs text-muted-foreground">refunded {money(ret.refundMinor, o.currency)}</span>}
+                <div className="mt-3 rounded-xs border border-border/80 bg-muted/30 p-3 text-xs space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <RotateCcw className="size-4 text-muted-foreground" />
+                      <span className="font-semibold text-foreground">Return Request:</span>
+                      <Badge variant={returnBadge[ret.status] ?? 'secondary'} className="capitalize">
+                        {ret.status}
+                      </Badge>
+                    </div>
+                    {ret.refundMinor > 0 && (
+                      <span className="font-bold text-[#7EC151]">
+                        Refunded {money(ret.refundMinor, o.currency)}
+                      </span>
+                    )}
                   </div>
+                  {ret.reason && (
+                    <p className="text-muted-foreground text-[11px]">
+                      Reason: <span className="text-foreground">{ret.reason}</span>
+                    </p>
+                  )}
                   {ret.images?.length > 0 && (
-                    <div className="mt-2 flex gap-2">
+                    <div className="flex gap-2 pt-1">
                       {ret.images.map((key) => (
-                        <AuthImage key={key} zoomable path={`/api/returns/${ret.id}/images/${key.split('/').pop()}`} className="size-14 rounded-md border object-cover" />
+                        <AuthImage
+                          key={key}
+                          zoomable
+                          path={`/api/returns/${ret.id}/images/${key.split('/').pop()}`}
+                          className="size-12 rounded-xs border object-cover"
+                        />
                       ))}
                     </div>
                   )}
                 </div>
               )}
 
+              {/* Return Form Accordion */}
               {returningId === o.id && (
-                <ReturnForm order={o} onDone={() => setReturningId(null)} />
+                <div className="mt-3 pt-3 border-t">
+                  <ReturnForm order={o} onDone={() => setReturningId(null)} />
+                </div>
               )}
             </CardContent>
           </Card>
         );
       })}
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={!!cancellingOrder} onOpenChange={(open) => !open && setCancellingOrder(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="size-5" />
+              Cancel Order
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel order <strong className="font-mono text-foreground">{cancellingOrder?.reference ?? `#${cancellingOrder?.id.slice(0, 8)}`}</strong>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <Label htmlFor="cancel-reason" className="text-xs font-semibold">Reason for Cancellation (Optional)</Label>
+            <Input
+              id="cancel-reason"
+              placeholder="e.g. Placed by mistake, changed mind"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              className="text-xs"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setCancellingOrder(null)}
+            >
+              Keep Order
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={cancel.isPending}
+              onClick={handleConfirmCancel}
+              className="font-bold"
+            >
+              {cancel.isPending ? 'Cancelling…' : 'Confirm Cancel'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -942,24 +1322,25 @@ function AddressesTab() {
   const del = useDeleteAddress();
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [addrError, setAddrError] = useState<string | null>(null);
 
   async function add(values: AddressInput) {
+    setAddrError(null);
     try {
       await create.mutateAsync(values);
       setAdding(false);
-      toast.success('Address added');
     } catch (e) {
-      toast.error((e as Error).message);
+      setAddrError((e as Error).message);
     }
   }
 
   async function saveEdit(id: string, values: AddressInput) {
+    setAddrError(null);
     try {
       await update.mutateAsync({ id, input: values });
       setEditingId(null);
-      toast.success('Address updated');
     } catch (e) {
-      toast.error((e as Error).message);
+      setAddrError((e as Error).message);
     }
   }
 
@@ -967,13 +1348,18 @@ function AddressesTab() {
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle>Addresses</CardTitle>
-        {!adding && <Button size="sm" variant="outline" onClick={() => { setAdding(true); setEditingId(null); }}>+ Add</Button>}
+        {!adding && <Button size="sm" variant="outline" onClick={() => { setAdding(true); setEditingId(null); setAddrError(null); }}>+ Add</Button>}
       </CardHeader>
       <CardContent className="space-y-3">
+        {addrError && (
+          <div className="rounded-xs bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 font-medium">
+            {addrError}
+          </div>
+        )}
         {isLoading && <p className="text-muted-foreground">Loading…</p>}
         {addresses?.map((a) => (
           editingId === a.id ? (
-            <div key={a.id} className="rounded-lg border p-4">
+            <div key={a.id} className="rounded-xs border p-4">
               <AddressForm
                 submitLabel="Update address"
                 submitting={update.isPending}
@@ -987,18 +1373,18 @@ function AddressesTab() {
                   postalCode: a.postalCode ?? '',
                 }}
                 onSubmit={(v) => saveEdit(a.id, v)}
-                onCancel={() => setEditingId(null)}
+                onCancel={() => { setEditingId(null); setAddrError(null); }}
               />
             </div>
           ) : (
-            <div key={a.id} className="flex items-start justify-between gap-3 rounded-lg border p-3 text-sm">
+            <div key={a.id} className="flex items-start justify-between gap-3 rounded-xs border p-3 text-sm">
               <div className="min-w-0">
                 <div className="font-medium">{a.fullName} {a.isDefault && <span className="text-xs text-muted-foreground">(default)</span>}</div>
                 <div className="text-muted-foreground">{a.line1}, {a.city} {a.postalCode}</div>
                 {a.phone && <div className="text-muted-foreground">{a.phone}</div>}
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => { setEditingId(a.id); setAdding(false); }}>Edit</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setEditingId(a.id); setAdding(false); setAddrError(null); }}>Edit</Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1009,7 +1395,7 @@ function AddressesTab() {
                       confirmText: 'Remove',
                       destructive: true,
                     })) {
-                      del.mutate(a.id, { onError: (e) => toast.error((e as Error).message) });
+                      del.mutate(a.id, { onError: (e) => setAddrError((e as Error).message) });
                     }
                   }}
                 >
@@ -1020,19 +1406,11 @@ function AddressesTab() {
           )
         ))}
         {adding && (
-          <div className="rounded-lg border p-4">
-            <AddressForm onSubmit={add} submitting={create.isPending} />
+          <div className="rounded-xs border p-4">
+            <AddressForm onSubmit={add} submitting={create.isPending} onCancel={() => { setAdding(false); setAddrError(null); }} />
           </div>
         )}
       </CardContent>
     </Card>
-  );
-}
-
-export default function AccountPage() {
-  return (
-    <Suspense>
-      <AccountInner />
-    </Suspense>
   );
 }

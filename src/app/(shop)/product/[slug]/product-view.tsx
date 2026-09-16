@@ -7,7 +7,6 @@ import {
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { RichText, fillTemplate } from '@/components/rich-text';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useProduct, useProducts, useAttributes } from '@/features/catalog';
@@ -19,7 +18,6 @@ import {
   VariantPicker,
   useVariantSelection,
 } from '@/features/catalog/components/variant-picker';
-import { useReferral } from '@/features/account';
 import { useMe } from '@/features/auth';
 import { useAddToCart } from '@/features/cart';
 import { useWishlist } from '@/features/wishlist';
@@ -40,7 +38,6 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
   const router = useRouter();
   const add = useAddToCart();
   const { data: me } = useMe();
-  const { data: refSummary } = useReferral(!!me);
   const { data: allAttributes } = useAttributes();
   const sizeAttr = useMemo(() => {
     return (allAttributes ?? []).find(
@@ -56,6 +53,9 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
   const [pincode, setPincode] = useState('');
   const [pincodeMessage, setPincodeMessage] = useState<string | null>(null);
   const [isCheckingPincode, setIsCheckingPincode] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const [cartError, setCartError] = useState<string | null>(null);
 
   // Wishlist state
   const wished = useWishlist((s) => s.ids.includes(product.id));
@@ -63,7 +63,6 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
 
   function handleWishlist() {
     toggleWish(product.id);
-    toast.success(wished ? 'Removed from wishlist' : 'Added to wishlist');
   }
 
   // Accordion state
@@ -135,35 +134,53 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
 
   const vars = useMemo(() => {
     const m: Record<string, string> = {};
-    for (const o of active?.options ?? []) {
+    const cleanDesc = (product.shortDescription || product.description || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleanDesc) {
+      m['description'] = cleanDesc;
+      m['shortdescription'] = cleanDesc;
+      m['desc'] = cleanDesc;
+    }
+    if (product.category) {
+      m['category'] = product.category;
+    }
+    const targetVariant = active ?? product.variants?.find((v) => v.isDefault) ?? product.variants?.[0];
+    for (const o of targetVariant?.options ?? []) {
       m[o.type.toLowerCase()] = o.value;
       m[o.slug.toLowerCase()] = o.value;
     }
-    if (active?.customVariables) {
-      for (const [k, v] of Object.entries(active.customVariables)) {
-        m[k.toLowerCase()] = v;
+    if (targetVariant?.customVariables) {
+      for (const [k, v] of Object.entries(targetVariant.customVariables)) {
+        const kLower = k.toLowerCase().trim();
+        m[kLower] = v;
+        m[kLower.replace(/[^a-z0-9]/g, '')] = v;
       }
     }
     return m;
-  }, [active]);
+  }, [product, active]);
 
   const needsSelection = product.hasVariants && !active;
   const canBuy = stock > 0 && !needsSelection;
 
   async function onAdd() {
+    setCartError(null);
     try {
       await add.mutateAsync({
         productId: product.id,
         variantId: active?.id ?? null,
         quantity: qty,
       });
-      toast.success('Added to cart');
+      setIsAdded(true);
+      setTimeout(() => setIsAdded(false), 2000);
     } catch (e) {
-      toast.error((e as Error).message);
+      setCartError((e as Error).message);
     }
   }
 
   async function onBuyNow() {
+    setCartError(null);
     try {
       await add.mutateAsync({
         productId: product.id,
@@ -172,13 +189,13 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
       });
       router.push('/checkout');
     } catch (e) {
-      toast.error((e as Error).message);
+      setCartError((e as Error).message);
     }
   }
 
   function checkPincode() {
     if (!pincode || pincode.trim().length < 6) {
-      toast.error('Please enter a valid 6-digit pincode');
+      setPincodeMessage('Please enter a valid 6-digit pincode');
       return;
     }
     setIsCheckingPincode(true);
@@ -200,7 +217,8 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
     } else {
       if (navigator.clipboard) {
         navigator.clipboard.writeText(url);
-        toast.success('Product link copied to clipboard!');
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
       }
     }
   }
@@ -213,9 +231,9 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
   }
 
   return (
-    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 py-4 md:py-8 md:pb-12 text-gray-900 font-sans">
+    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 pt-0 pb-6 md:pt-4 md:pb-12 text-gray-900 font-sans">
       {/* Dynamic Breadcrumb Trail matching screenshot */}
-      <nav className="text-xs text-gray-500 mb-4 hidden md:flex items-center gap-1.5">
+      <nav className="text-xs text-gray-500 mb-3 hidden md:flex items-center gap-1.5">
         <Link href="/" className="hover:text-gray-900">Home</Link>
         <span>/</span>
         <Link href="/shop" className="hover:text-gray-900">{product.category || 'Shop'}</Link>
@@ -394,26 +412,45 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
           <CustomQuantitySelector value={qty} onChange={setQty} />
 
           {/* Desktop CTAs: Side-by-side ADD TO CART + BUY NOW */}
-          <div className="hidden md:flex gap-3 pt-2">
-            <button
-              type="button"
-              disabled={!canBuy || add.isPending}
-              onClick={onAdd}
-              className="flex-1 h-12 rounded-xs border border-gray-900 font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-colors text-gray-900 bg-white hover:bg-gray-50"
-            >
-              <ShoppingBag className="size-4" />
-              {add.isPending ? 'ADDING...' : 'ADD TO CART'}
-            </button>
+          <div className="hidden md:flex flex-col gap-1.5 pt-2">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                disabled={!canBuy || add.isPending}
+                onClick={onAdd}
+                className={cn(
+                  'flex-1 h-12 rounded-xs border font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-all',
+                  isAdded
+                    ? 'border-[#117a7a] bg-[#117a7a]/10 text-[#117a7a]'
+                    : 'border-gray-900 text-gray-900 bg-white hover:bg-gray-50',
+                )}
+              >
+                {isAdded ? (
+                  <>
+                    <Check className="size-4 text-[#117a7a]" />
+                    <span>ADDED TO BAG ✓</span>
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="size-4" />
+                    <span>{add.isPending ? 'ADDING...' : 'ADD TO CART'}</span>
+                  </>
+                )}
+              </button>
 
-            <button
-              type="button"
-              disabled={!canBuy || add.isPending}
-              onClick={onBuyNow}
-              className="flex-1 h-12 rounded-xs bg-[#e83825] hover:bg-[#d42d1b] disabled:bg-gray-400 text-white font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-colors shadow-sm"
-            >
-              <Zap className="size-4 fill-white text-white" />
-              BUY NOW
-            </button>
+              <button
+                type="button"
+                disabled={!canBuy || add.isPending}
+                onClick={onBuyNow}
+                className="flex-1 h-12 rounded-xs bg-primary-button hover:bg-primary-button/90 disabled:bg-gray-400 text-white font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-colors shadow-sm"
+              >
+                <Zap className="size-4 fill-white text-white" />
+                BUY NOW
+              </button>
+            </div>
+            {cartError && (
+              <p className="text-xs text-red-600 font-medium">{cartError}</p>
+            )}
           </div>
 
           {/* Share Icons Row matching screenshot */}
@@ -424,7 +461,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                 type="button"
                 onClick={() => handleShare('wa')}
                 aria-label="Share on WhatsApp"
-                className="p-1.5 text-gray-600 hover:text-emerald-600 transition-colors"
+                className="p-1.5 text-gray-600 hover:text-[#117a7a] transition-colors"
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="size-4"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
               </button>
@@ -448,9 +485,10 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                 type="button"
                 onClick={() => handleShare()}
                 aria-label="Copy Link"
-                className="p-1.5 text-gray-600 hover:text-pink-600 transition-colors"
+                className="inline-flex items-center gap-1 p-1.5 text-gray-600 hover:text-pink-600 transition-colors"
               >
-                <Share2 className="size-4" />
+                {isCopied ? <Check className="size-4 text-[#117a7a]" /> : <Share2 className="size-4" />}
+                {isCopied && <span className="text-[10px] text-[#117a7a] font-bold">Copied!</span>}
               </button>
             </div>
           </div>
@@ -497,7 +535,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
             </div>
 
             {pincodeMessage && (
-              <p className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 p-2.5 rounded-xs">
+              <p className="text-xs font-medium text-[#117a7a] bg-[#117a7a]/10 border border-[#117a7a]/30 p-2.5 rounded-xs">
                 {pincodeMessage}
               </p>
             )}
@@ -588,26 +626,45 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
       </div>
 
       {/* Mobile Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 p-2.5 flex items-center gap-2.5 shadow-lg md:hidden">
-        <button
-          type="button"
-          disabled={!canBuy || add.isPending}
-          onClick={onAdd}
-          className="flex-1 h-11 rounded-xs border border-gray-900 font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors text-gray-900 bg-white"
-        >
-          <ShoppingBag className="size-4" />
-          {add.isPending ? 'ADDING...' : 'ADD TO CART'}
-        </button>
+      <div className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-200 p-2.5 flex flex-col gap-1 shadow-lg md:hidden">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            disabled={!canBuy || add.isPending}
+            onClick={onAdd}
+            className={cn(
+              'flex-1 h-11 rounded-xs border font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors',
+              isAdded
+                ? 'border-[#117a7a] bg-[#117a7a]/10 text-[#117a7a]'
+                : 'border-gray-900 text-gray-900 bg-white',
+            )}
+          >
+            {isAdded ? (
+              <>
+                <Check className="size-4 text-[#117a7a]" />
+                <span>ADDED ✓</span>
+              </>
+            ) : (
+              <>
+                <ShoppingBag className="size-4" />
+                <span>{add.isPending ? 'ADDING...' : 'ADD TO CART'}</span>
+              </>
+            )}
+          </button>
 
-        <button
-          type="button"
-          disabled={!canBuy || add.isPending}
-          onClick={onBuyNow}
-          className="flex-1 h-11 rounded-xs bg-[#e83825] hover:bg-[#d42d1b] disabled:bg-gray-400 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-sm"
-        >
-          <Zap className="size-4 fill-white text-white" />
-          BUY NOW
-        </button>
+          <button
+            type="button"
+            disabled={!canBuy || add.isPending}
+            onClick={onBuyNow}
+            className="flex-1 h-11 rounded-xs bg-primary-button hover:bg-primary-button/90 disabled:bg-gray-400 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+          >
+            <Zap className="size-4 fill-white text-white" />
+            BUY NOW
+          </button>
+        </div>
+        {cartError && (
+          <p className="text-center text-xs text-red-600 font-medium">{cartError}</p>
+        )}
       </div>
 
       {/* Size Chart Modal */}
@@ -717,31 +774,36 @@ function ModalCustomVideo({ src }: { src: string }) {
 }
 
 function SimilarProductsSection({ currentProductId, categoryId }: { currentProductId: string; categoryId: string | null }) {
-  const { data: products } = useProducts({ categoryId: categoryId || undefined, limit: 11 });
+  const { data: products, isLoading } = useProducts({ categoryId: categoryId || undefined, limit: 11 });
   const filtered = useMemo(() => {
     return (products ?? []).filter((p) => p.productId !== currentProductId).slice(0, 10);
   }, [products, currentProductId]);
 
-  if (filtered.length === 0) return null;
+  if (!isLoading && filtered.length === 0) return null;
 
   const shopHref = categoryId ? `/shop?category=${categoryId}` : '/shop';
 
   return (
-    <div className="mt-8 md:mt-16 border-t border-gray-200 pt-6 md:pt-8">
-      <div className="mb-6 flex items-end justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-muted-foreground">Others Also Bought</h2>
-        <Link href={shopHref} className="text-xs font-medium uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
+    <div className="mt-8 md:mt-16 border-t border-gray-200 pt-6 md:pt-10">
+      <div className="mb-6 sm:mb-8 flex flex-col items-center justify-center text-center">
+        <h2 className="text-sm sm:text-base font-bold uppercase tracking-[0.25em] text-neutral-900 dark:text-neutral-100">
+          Others also bought
+        </h2>
+        <Link
+          href={shopHref}
+          className="mt-1 text-xs font-medium uppercase tracking-widest text-neutral-600 dark:text-neutral-400 transition-colors hover:text-foreground"
+        >
           Show all →
         </Link>
       </div>
-      <ProductRow items={filtered} />
+      <ProductRow items={filtered} loading={isLoading} />
     </div>
   );
 }
 
 function ProductSkeleton() {
   return (
-    <div className="mx-auto max-w-[1500px] px-4 py-8 grid gap-8 md:grid-cols-12">
+    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 pt-0 pb-6 md:pt-4 md:pb-12 grid gap-8 md:grid-cols-12">
       <Skeleton className="md:col-span-7 aspect-square w-full rounded-none" />
       <div className="md:col-span-5 space-y-4">
         <Skeleton className="h-8 w-3/4" />
@@ -778,11 +840,12 @@ function CustomQuantitySelector({
     const parsed = parseInt(customVal, 10);
     if (parsed > 0) {
       onChange(parsed);
-      setIsCustomMode(false);
-      setIsOpen(false);
     } else {
-      toast.error('Please enter a valid quantity');
+      setCustomVal('1');
+      onChange(1);
     }
+    setIsCustomMode(false);
+    setIsOpen(false);
   }
 
   return (
@@ -852,7 +915,7 @@ function CustomQuantitySelector({
                   setIsCustomMode(true);
                   setCustomVal(String(value));
                 }}
-                className="w-full px-3 py-2 text-left text-xs font-bold text-[#187b7b] hover:bg-emerald-50 flex items-center justify-between transition-colors"
+                className="w-full px-3 py-2 text-left text-xs font-bold text-[#187b7b] hover:bg-[#7EC151]/10 flex items-center justify-between transition-colors"
               >
                 <span>More (Custom)…</span>
                 <span className="text-[10px]">+</span>

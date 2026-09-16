@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Variant } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +50,19 @@ export function useVariantSelection(variants: Variant[]) {
   }, [variants]);
 
   const [selection, setSelection] = useState<Selection>(initial);
-  const active = useMemo(() => matchVariant(variants ?? [], selection), [variants, selection]);
+
+  useEffect(() => {
+    if (Object.keys(initial).length > 0 && Object.keys(selection).length === 0) {
+      setSelection(initial);
+    }
+  }, [initial, selection]);
+
+  const active = useMemo(() => {
+    const matched = matchVariant(variants ?? [], selection);
+    if (matched) return matched;
+    return variants?.find((v) => v.isDefault) ?? variants?.[0];
+  }, [variants, selection]);
+
   return { groups, selection, setSelection, active };
 }
 

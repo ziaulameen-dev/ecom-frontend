@@ -11,7 +11,6 @@ export function useVerifyOtp() {
     mutationFn: verifyOtp,
     onSuccess: (res) => {
       qc.setQueryData(authKeys.me, res.user);
-      qc.invalidateQueries({ queryKey: ['cart'] });
     },
   });
 }

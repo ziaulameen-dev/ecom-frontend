@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminKeys } from '../keys';
-import { createCoupon, deleteCoupon, fetchAdminCoupons } from '../services/admin.service';
+import { createCoupon, deleteCoupon, fetchAdminCoupons, updateCoupon } from '../services/admin.service';
 
 function useInvalidate(key: readonly unknown[]) {
   const qc = useQueryClient();
@@ -15,6 +15,10 @@ export const useAdminCoupons = () =>
 export function useCreateCoupon() {
   const inv = useInvalidate(adminKeys.coupons);
   return useMutation({ mutationFn: createCoupon, onSuccess: inv });
+}
+export function useUpdateCoupon() {
+  const inv = useInvalidate(adminKeys.coupons);
+  return useMutation({ mutationFn: updateCoupon, onSuccess: inv });
 }
 export function useDeleteCoupon() {
   const inv = useInvalidate(adminKeys.coupons);

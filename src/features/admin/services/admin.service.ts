@@ -2,39 +2,17 @@ import { api } from '@/lib/api-client';
 import type {
   AdminCustomer,
   AdminOrder,
-  AdminPayout,
   AdminProduct,
-  AdminReferral,
   AdminReturn,
-  AffiliateSettings,
   AttributeType,
   Category,
   Coupon,
   OrderStatus,
-  PayoutStatus,
   Review,
+  ShippingRateResponse,
+  ShippingTier,
   Subscriber,
 } from '@/lib/types';
-
-// ---- Affiliate (admin) ----------------------------------------------------
-
-export function fetchAffiliateSettings() {
-  return api.get<AffiliateSettings>('/api/admin/affiliate/settings');
-}
-export function setAffiliateSettings(body: {
-  commissionMinor: number; unlockThreshold: number; minPayoutMinor: number;
-}) {
-  return api.put<AffiliateSettings>('/api/admin/affiliate/settings', body);
-}
-export function fetchAdminReferrals() {
-  return api.get<AdminReferral[]>('/api/admin/affiliate/referrals');
-}
-export function fetchAdminPayouts() {
-  return api.get<AdminPayout[]>('/api/admin/affiliate/payouts');
-}
-export function decidePayout(id: string, status: PayoutStatus) {
-  return api.patch<AdminPayout>(`/api/admin/affiliate/payouts/${id}`, { status });
-}
 
 export function fetchSubscribers() {
   return api.get<Subscriber[]>('/api/newsletter/admin/subscribers');
@@ -161,6 +139,9 @@ export function fetchAdminCoupons() {
 export function createCoupon(body: Record<string, unknown>) {
   return api.post('/api/admin/coupons', body);
 }
+export function updateCoupon({ id, body }: { id: string; body: Record<string, unknown> }) {
+  return api.patch(`/api/admin/coupons/${id}`, body);
+}
 export function deleteCoupon(id: string) {
   return api.del(`/api/admin/coupons/${id}`);
 }
@@ -172,14 +153,19 @@ export function fetchAdminReviews() {
 export function createReview(body: Record<string, unknown>) {
   return api.post('/api/reviews', body);
 }
+export function updateReview({ id, body }: { id: string; body: Record<string, unknown> }) {
+  return api.patch(`/api/reviews/${id}`, body);
+}
 export function deleteReview(id: string) {
   return api.del(`/api/reviews/${id}`);
 }
 
 /* ---- Shipping ------------------------------------------------------------ */
-export function fetchShippingRate() {
-  return api.get<{ amountMinor: number }>('/api/shipping-rate');
+export function fetchShippingRate(subtotalMinor?: number) {
+  const query = subtotalMinor !== undefined ? `?subtotal=${subtotalMinor}` : '';
+  return api.get<ShippingRateResponse>(`/api/shipping-rate${query}`);
 }
-export function setShippingRate(amountMinor: number) {
-  return api.put('/api/shipping-rate', { amountMinor });
+export function setShippingRate(payload: { amountMinor?: number; tiers?: ShippingTier[] } | number) {
+  const body = typeof payload === 'number' ? { amountMinor: payload } : payload;
+  return api.put<ShippingRateResponse>('/api/shipping-rate', body);
 }

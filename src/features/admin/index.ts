@@ -44,17 +44,16 @@ export { useAdminReturns, useReturnAction } from './hooks/use-admin-returns';
 export {
   useAdminCoupons,
   useCreateCoupon,
+  useUpdateCoupon,
   useDeleteCoupon,
 } from './hooks/use-admin-coupons';
 
 export {
   useAdminReviews,
   useCreateReview,
+  useUpdateReview,
   useDeleteReview,
 } from './hooks/use-admin-reviews';
 
 export { useShippingRate, useSetShippingRate } from './hooks/use-admin-shipping';
 export { useSubscribers, useCustomers, useBroadcast, useNotifyProduct } from './hooks/use-admin-newsletter';
-export {
-  useAffiliateSettings, useSetAffiliateSettings, useAdminReferrals, useAdminPayouts, useDecidePayout,
-} from './hooks/use-admin-affiliate';

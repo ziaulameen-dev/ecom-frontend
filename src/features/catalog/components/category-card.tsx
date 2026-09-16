@@ -1,14 +1,12 @@
 'use client';
 
-import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Category } from '@/lib/types';
 import { mediaSrc } from '@/lib/utils';
 
 /**
- * A "shop by collection" tile: a tall portrait image with a floating white
- * label box (name + "Shop now →") overlapping its lower edge.
+ * Minimalist square category card with light gray background and centered uppercase title below.
  */
 export function CategoryCard({ category }: { category: Pick<Category, 'name' | 'slug' | 'imageUrl'> }) {
   const src = category.imageUrl
@@ -18,30 +16,22 @@ export function CategoryCard({ category }: { category: Pick<Category, 'name' | '
   return (
     <Link
       href={`/shop?category=${category.slug}`}
-      className="group relative block aspect-[16/14] cursor-pointer overflow-hidden rounded-none bg-muted"
+      className="group flex flex-col items-center text-center cursor-pointer select-none w-full"
     >
-      <Image
-        src={src}
-        alt={category.name}
-        fill
-        sizes="(min-width:1024px) 25vw, (min-width:640px) 33vw, 50vw"
-        className="object-cover"
-      />
-
-      {/* Dark gradient fades up from the bottom on hover — brings the tile into focus. */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-      <div className="absolute inset-x-3 bottom-3 rounded-none bg-background px-4 py-3 shadow-sm">
-        <div className="truncate text-sm font-bold uppercase tracking-wide">{category.name}</div>
-        <div className="mt-2 flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-          <span>Shop now</span>
-          {/* Divider "draws" toward the arrow on hover, then the arrow glides out. */}
-          <span className="relative h-px flex-1 overflow-hidden bg-foreground/20">
-            <span className="absolute inset-0 origin-left scale-x-0 bg-foreground transition-transform duration-300 ease-out group-hover:scale-x-100" />
-          </span>
-          <ArrowRight className="size-3 transition-transform duration-300 ease-out group-hover:translate-x-1" />
-        </div>
+      <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] transition-all duration-300 group-hover:bg-[#ebebeb]">
+        <Image
+          src={src}
+          alt={category.name}
+          fill
+          sizes="(min-width: 1024px) 350px, (min-width: 640px) 33vw, 33vw"
+          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-black/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
       </div>
+
+      <p className="mt-3 sm:mt-4 w-full text-center text-xs sm:text-sm font-bold uppercase tracking-[0.2em] text-neutral-900 transition-colors group-hover:text-primary line-clamp-1">
+        {category.name}
+      </p>
     </Link>
   );
 }

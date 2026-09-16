@@ -1,7 +1,6 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRequestReturn } from '../hooks/use-returns';
@@ -12,22 +11,33 @@ export function ReturnForm({ order, onDone }: { order: Order; onDone: () => void
   const request = useRequestReturn();
   const [reason, setReason] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function submit() {
+    setError(null);
     try {
       await request.mutateAsync({ orderId: order.id, reason, items: order.items, files });
-      toast.success('Return requested');
       onDone();
     } catch (e) {
-      toast.error((e as Error).message);
+      setError((e as Error).message);
     }
   }
 
   return (
     <div className="mt-3 space-y-3 rounded-lg border bg-muted/30 p-4">
       <p className="text-sm font-medium">Request a return (whole order)</p>
-      <Input placeholder="Reason (e.g. defective, wrong item)" value={reason} onChange={(e) => setReason(e.target.value)} />
+      {error && (
+        <p className="text-xs text-red-600 font-medium">{error}</p>
+      )}
+      <Input
+        placeholder="Reason (e.g. defective, wrong item)"
+        value={reason}
+        onChange={(e) => {
+          setReason(e.target.value);
+          if (error) setError(null);
+        }}
+      />
       <div>
         <input
           ref={fileRef}

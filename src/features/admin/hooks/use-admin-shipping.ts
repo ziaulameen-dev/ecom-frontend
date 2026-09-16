@@ -9,8 +9,11 @@ function useInvalidate(key: readonly unknown[]) {
   return () => qc.invalidateQueries({ queryKey: key });
 }
 
-export const useShippingRate = () =>
-  useQuery({ queryKey: adminKeys.shipping, queryFn: fetchShippingRate });
+export const useShippingRate = (subtotalMinor?: number) =>
+  useQuery({
+    queryKey: subtotalMinor !== undefined ? [...adminKeys.shipping, subtotalMinor] : adminKeys.shipping,
+    queryFn: () => fetchShippingRate(subtotalMinor),
+  });
 
 export function useSetShippingRate() {
   const inv = useInvalidate(adminKeys.shipping);

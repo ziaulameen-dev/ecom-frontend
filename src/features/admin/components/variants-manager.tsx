@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { confirm } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger,
 } from '@/components/ui/drawer';
@@ -79,52 +80,66 @@ export function VariantsManager({ product }: { product: AdminProduct }) {
       </div>
 
       <div className="space-y-2">
-        {product.variants.map((v) => (
-          <div key={v.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm">
-            {v.images[0] && (
-              isVideoUrl(v.images[0]) ? (
-                <video src={mediaSrc(v.images[0])} className="size-10 shrink-0 rounded-md border object-cover" muted playsInline />
-              ) : (
-                <Image src={mediaSrc(v.images[0])} alt="" width={40} height={40} unoptimized className="size-10 shrink-0 rounded-md border object-cover" />
-              )
-            )}
-            <span className="flex flex-wrap gap-1">
-              {v.valueIds.map((id) => (
-                <span key={id} className="rounded bg-muted px-1.5 py-0.5 text-xs">{label.get(id) ?? id.slice(0, 6)}</span>
-              ))}
-            </span>
-            {v.sku && <span className="text-xs text-muted-foreground">SKU {v.sku}</span>}
-            {v.offerPriceMinor != null ? (
-              <span className="flex items-center gap-1.5">
-                <span className="font-medium">{money(v.offerPriceMinor)}</span>
-                <span className="text-xs text-muted-foreground line-through">{money(v.priceMinor)}</span>
+        {product.variants.map((v) => {
+          // Resolve the product name template: substitute {key} with variant's customVariable value
+          let resolvedName = product.name ?? '';
+          for (const [key, val] of Object.entries(v.customVariables ?? {})) {
+            resolvedName = resolvedName.replace(new RegExp(`\\{${key}\\}`, 'g'), val);
+          }
+          resolvedName = resolvedName.replace(/\{[^}]+\}/g, '').replace(/\s{2,}/g, ' ').trim();
+
+          // Attribute option values as secondary chips
+          const attrChips = v.valueIds.map((id) => label.get(id)).filter(Boolean) as string[];
+
+          return (
+            <div key={v.id} className="flex flex-wrap items-center gap-3 rounded-lg border p-3 text-sm">
+              {v.images[0] && (
+                isVideoUrl(v.images[0]) ? (
+                  <video src={mediaSrc(v.images[0])} className="size-10 shrink-0 rounded-md border object-cover" muted playsInline />
+                ) : (
+                  <Image src={mediaSrc(v.images[0])} alt="" width={40} height={40} unoptimized className="size-10 shrink-0 rounded-md border object-cover" />
+                )
+              )}
+              <span className="flex flex-wrap items-center gap-1">
+                {/* Resolved name (template substituted) as primary label */}
+                <span className="font-medium">{resolvedName}</span>
+                {attrChips.map((chip, i) => (
+                  <span key={i} className="rounded bg-muted px-1.5 py-0.5 text-xs">{chip}</span>
+                ))}
               </span>
-            ) : (
-              <span className="font-medium">{money(v.priceMinor)}</span>
-            )}
-            <span className="text-xs text-muted-foreground">stock {v.stock}</span>
-            {v.images.length > 0 && <span className="text-xs text-muted-foreground">· {v.images.length} media</span>}
-            {v.isDefault && <Badge variant="secondary">default</Badge>}
-            {v.listedSeparately && <Badge>listed</Badge>}
-            <div className="ml-auto flex items-center gap-1">
-              <VariantDialog
-                product={product}
-                variant={v}
-                trigger={<Button type="button" variant="ghost" size="icon" aria-label="Edit variant"><Pencil className="size-4" /></Button>}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive"
-                aria-label="Delete variant"
-                onClick={async () => { if (await confirm({ title: 'Delete variant?', description: 'This variant will be permanently removed.', confirmText: 'Delete', destructive: true })) delVariant.mutate(v.id); }}
-              >
-                <Trash2 className="size-4" />
-              </Button>
+              {v.sku && <span className="text-xs text-muted-foreground">SKU {v.sku}</span>}
+              {v.offerPriceMinor != null ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="font-medium">{money(v.offerPriceMinor)}</span>
+                  <span className="text-xs text-muted-foreground line-through">{money(v.priceMinor)}</span>
+                </span>
+              ) : (
+                <span className="font-medium">{money(v.priceMinor)}</span>
+              )}
+              <span className="text-xs text-muted-foreground">stock {v.stock}</span>
+              {v.images.length > 0 && <span className="text-xs text-muted-foreground">· {v.images.length} media</span>}
+              {v.isDefault && <Badge variant="secondary">default</Badge>}
+              {v.listedSeparately && <Badge>listed</Badge>}
+              <div className="ml-auto flex items-center gap-1">
+                <VariantDialog
+                  product={product}
+                  variant={v}
+                  trigger={<Button type="button" variant="ghost" size="icon" aria-label="Edit variant"><Pencil className="size-4" /></Button>}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive"
+                  aria-label="Delete variant"
+                  onClick={async () => { if (await confirm({ title: 'Delete variant?', description: 'This variant will be permanently removed.', confirmText: 'Delete', destructive: true })) delVariant.mutate(v.id); }}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {product.variants.length === 0 && (
           <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
             No variants — this product sells at its base price and stock.
@@ -364,8 +379,14 @@ function VariantDialog({
           </div>
 
           <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={listedSeparately} onChange={(e) => setListedSeparately(e.target.checked)} /> List on shop</label>
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} /> Default variant</label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <Checkbox checked={listedSeparately} onCheckedChange={setListedSeparately} className="rounded-xs" />
+              <span>List on shop</span>
+            </label>
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+              <Checkbox checked={isDefault} onCheckedChange={setIsDefault} className="rounded-xs" />
+              <span>Default variant</span>
+            </label>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

@@ -59,14 +59,43 @@ async function unwrap<T>(res: Response): Promise<T> {
   return (json.data ?? json) as T;
 }
 
+type AuthRefreshListener = () => void;
+const refreshListeners = new Set<AuthRefreshListener>();
+
+export function onAuthRefreshed(listener: AuthRefreshListener): () => void {
+  refreshListeners.add(listener);
+  return () => {
+    refreshListeners.delete(listener);
+  };
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
 /**
  * Refresh the session cookies. The refresh token rides in its HttpOnly cookie,
  * so there's no body — the server rotates the cookies and we just report
- * whether it worked.
+ * whether it worked. Deduplicated so concurrent 401s don't trigger multiple refreshes.
  */
 async function tryRefresh(): Promise<boolean> {
-  const res = await raw('/auth/refresh', { method: 'POST', auth: false });
-  return res.ok;
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = raw('/auth/refresh', { method: 'POST', auth: false })
+    .then((res) => {
+      if (res.ok) {
+        refreshListeners.forEach((fn) => {
+          try {
+            fn();
+          } catch {}
+        });
+      }
+      return res.ok;
+    })
+    .catch(() => false)
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
 }
 
 /** Core request: unwraps the {success,data} envelope, refreshes once on 401. */

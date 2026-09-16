@@ -7,7 +7,7 @@ export type { ProductQuery } from './types';
 
 export { useCategoryTree } from './hooks/use-categories';
 export { useAttributes } from './hooks/use-attributes';
-export { useProducts, useProduct } from './hooks/use-products';
+export { useProducts, useInfiniteProducts, useProduct } from './hooks/use-products';
 export { useReviews } from './hooks/use-reviews';
 export { useHero, useCreateHero, useUpdateHero, useReorderHero, useSetHeroAspect, useDeleteHero } from './hooks/use-hero';
 export { useAnnouncement, useSetAnnouncement } from './hooks/use-announcement';

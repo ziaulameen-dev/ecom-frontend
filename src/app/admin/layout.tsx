@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { useAuthModal, useMe } from '@/features/auth';
 import { sseUrl } from '@/lib/api-client';
 import { cn } from '@/lib/utils';
@@ -21,7 +22,6 @@ const NAV = [
   { href: '/admin/attributes', label: 'Attributes', icon: Boxes },
   { href: '/admin/returns', label: 'Returns', icon: Undo2 },
   { href: '/admin/coupons', label: 'Coupons', icon: BadgePercent },
-  { href: '/admin/affiliate', label: 'Affiliate', icon: Gift },
   { href: '/admin/reviews', label: 'Reviews', icon: Star },
   { href: '/admin/customers', label: 'Customers', icon: Users },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
@@ -78,7 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               href={item.href}
               onClick={() => setMobileOpen(false)}
               className={cn(
-                'flex h-10 items-center gap-3 rounded-md px-3 text-sm transition-colors',
+                'flex h-10 items-center gap-3 rounded-xs px-3 text-sm transition-colors',
                 active
                   ? 'bg-foreground text-background'
                   : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -100,7 +100,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-muted/30">
       {/* Mobile top bar with burger */}
       <div className="sticky top-0 z-30 flex items-center gap-3 border-b bg-sidebar px-4 py-3 text-sidebar-foreground md:hidden">
-        <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open menu" className="rounded-md p-1 hover:bg-sidebar-accent">
+        <button type="button" onClick={() => setMobileOpen(true)} aria-label="Open menu" className="rounded-xs p-1 hover:bg-sidebar-accent">
           <Menu className="size-5" />
         </button>
         <Link href="/admin" className="flex items-center gap-2 text-lg font-bold">
@@ -129,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               mobileOpen ? 'translate-x-0' : '-translate-x-full',
             )}
           >
-            <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu" className="absolute right-2 top-3 rounded-md p-1 text-sidebar-foreground/70 hover:bg-sidebar-accent">
+            <button type="button" onClick={() => setMobileOpen(false)} aria-label="Close menu" className="absolute right-2 top-3 rounded-xs p-1 text-sidebar-foreground/70 hover:bg-sidebar-accent">
               <X className="size-5" />
             </button>
             {sidebar}
@@ -138,6 +138,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+      <Toaster richColors position="top-center" />
     </div>
   );
 }

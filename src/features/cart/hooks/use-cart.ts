@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { cartId } from '@/lib/session';
 import type { CartView } from '@/lib/types';
 import { cartKeys } from '../keys';
-import { addCartItem, fetchCart, removeCartItem, updateCartItem } from '../services/cart.service';
+import { addCartItem, fetchCart, mergeCart, removeCartItem, updateCartItem } from '../services/cart.service';
 
 /** Persist the returned cart id (for guests) and prime the cache. */
 function useApplyCart() {
@@ -44,5 +44,16 @@ export function useRemoveCartItem() {
   return useMutation({
     mutationFn: (itemId: string) => removeCartItem(itemId),
     onSuccess: apply,
+  });
+}
+
+export function useMergeCart() {
+  const apply = useApplyCart();
+  return useMutation({
+    mutationFn: () => mergeCart(),
+    onSuccess: (cart) => {
+      cartId.clear();
+      apply(cart);
+    },
   });
 }

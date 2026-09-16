@@ -4,4 +4,5 @@
  */
 export { cartKeys } from './keys';
 
-export { useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem } from './hooks/use-cart';
+export { useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useMergeCart } from './hooks/use-cart';
+export { useCartSync } from './hooks/use-cart-sync';

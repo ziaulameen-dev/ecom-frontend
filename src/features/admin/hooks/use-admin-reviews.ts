@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminKeys } from '../keys';
-import { createReview, deleteReview, fetchAdminReviews } from '../services/admin.service';
+import { createReview, deleteReview, fetchAdminReviews, updateReview } from '../services/admin.service';
 
 function useInvalidate(key: readonly unknown[]) {
   const qc = useQueryClient();
@@ -15,6 +15,10 @@ export const useAdminReviews = () =>
 export function useCreateReview() {
   const inv = useInvalidate(adminKeys.reviews);
   return useMutation({ mutationFn: createReview, onSuccess: inv });
+}
+export function useUpdateReview() {
+  const inv = useInvalidate(adminKeys.reviews);
+  return useMutation({ mutationFn: updateReview, onSuccess: inv });
 }
 export function useDeleteReview() {
   const inv = useInvalidate(adminKeys.reviews);

@@ -22,6 +22,12 @@ export interface CategoryNode extends Category {
 export interface HeroBanner {
   id: string;
   imageUrl: string | null;
+  mobileImageUrl?: string | null;
+  title?: string | null;
+  subtitle?: string | null;
+  categoryTags?: string[] | null;
+  productIds?: string[] | null;
+  linkedProducts?: ListingItem[];
   linkUrl: string;
 }
 
@@ -193,6 +199,7 @@ export interface CartLine {
   lineTotalMinor: number;
   available: boolean;
   stock: number;
+  customVariables?: Record<string, string>;
 }
 export interface CartView {
   id: string;
@@ -211,92 +218,7 @@ export interface User {
   roles: string[];
 }
 
-// ---- Referral / affiliate --------------------------------------------------
 
-export type ReferralStatus = 'pending' | 'confirmed' | 'matured' | 'void';
-export type PayoutStatus = 'requested' | 'approved' | 'rejected' | 'paid';
-
-export interface ReferralItem {
-  id: string;
-  orderReference: string | null;
-  commissionMinor: number;
-  status: ReferralStatus;
-  maturesAt: string | null;
-  createdAt: string;
-}
-export type PayoutMethod = 'upi' | 'bank';
-
-export interface ReferralPayout {
-  id: string;
-  amountMinor: number;
-  status: PayoutStatus;
-  method: PayoutMethod;
-  verifiedName: string | null;
-  createdAt: string;
-}
-/** UPI/bank destination sent with a payout request. */
-export interface PayoutAccount {
-  method: PayoutMethod;
-  upiId?: string;
-  accountName?: string;
-  accountNumber?: string;
-  ifsc?: string;
-}
-export interface AccountVerifyResult {
-  available: boolean;
-  valid?: boolean;
-  name?: string | null;
-  message?: string;
-}
-export interface ReferralSummary {
-  code: string;
-  commissionMinor: number;
-  unlockThreshold: number;
-  minPayoutMinor: number;
-  balanceMinor: number;
-  availableMinor: number;
-  unlocked: boolean;
-  verifyEnabled: boolean;
-  returnDays: number;
-  maturingMinor: number;
-  pendingCount: number;
-  confirmedCount: number;
-  totalEarnedMinor: number;
-  referrals: ReferralItem[];
-  payouts: ReferralPayout[];
-}
-export interface AffiliateSettings {
-  id: string;
-  commissionMinor: number;
-  unlockThreshold: number;
-  minPayoutMinor: number;
-}
-export interface AdminReferral {
-  id: string;
-  referrerUserId: string;
-  buyerUserId: string;
-  orderId: string;
-  orderReference: string | null;
-  commissionMinor: number;
-  status: ReferralStatus;
-  createdAt: string;
-}
-export interface AdminPayout {
-  id: string;
-  userId: string;
-  userEmail: string | null;
-  amountMinor: number;
-  status: PayoutStatus;
-  method: PayoutMethod;
-  upiId: string | null;
-  accountName: string | null;
-  accountNumber: string | null;
-  ifsc: string | null;
-  verifiedName: string | null;
-  verified: boolean;
-  note: string | null;
-  createdAt: string;
-}
 
 /** Customer-facing coupon (from GET /api/coupons — currently usable codes). */
 export interface ActiveCoupon {
@@ -306,6 +228,10 @@ export interface ActiveCoupon {
   minSubtotalMinor: number;
   maxDiscountMinor: number | null;
   expiresAt: string | null;
+  isAvailable?: boolean;
+  unavailableReason?: string | null;
+  usedCount?: number;
+  maxPerUser?: number | null;
 }
 
 export interface Address {
@@ -330,6 +256,7 @@ export interface OrderItem {
   variantId: string | null;
   name: string;
   variantLabel: string | null;
+  imageUrl?: string | null;
   unitAmountMinor: number;
   quantity: number;
 }
@@ -427,6 +354,20 @@ export interface Order {
   taxMinor: number;
   totalMinor: number;
   couponCode: string | null;
+  shippingAddress?: ShippingAddress | null;
   items: OrderItem[];
   createdAt: string;
+}
+
+export interface ShippingTier {
+  id?: string;
+  minSubtotalMinor: number;
+  maxSubtotalMinor: number | null;
+  amountMinor: number;
+  sortOrder?: number;
+}
+
+export interface ShippingRateResponse {
+  amountMinor: number;
+  tiers: ShippingTier[];
 }

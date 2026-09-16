@@ -1,6 +1,8 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { cartKeys } from '@/features/cart/keys';
+import { cartId } from '@/lib/session';
 import { authKeys } from '../keys';
 import { logout } from '../services/auth.service';
 
@@ -12,8 +14,9 @@ export function useLogout() {
       await logout().catch(() => {});
     },
     onSuccess: () => {
+      cartId.clear();
       qc.setQueryData(authKeys.me, null);
-      qc.invalidateQueries({ queryKey: ['cart'] });
+      qc.invalidateQueries({ queryKey: cartKeys.cart });
     },
   });
 }

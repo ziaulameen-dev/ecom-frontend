@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -248,9 +249,9 @@ export function ProductForm({ mode, product }: Props) {
           <Card>
             <CardHeader><CardTitle className="text-base">Status</CardTitle></CardHeader>
             <CardContent>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
-                Active <span className="text-muted-foreground">(visible in the store)</span>
+              <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none">
+                <Checkbox checked={active} onCheckedChange={setActive} className="rounded-xs" />
+                <span>Active <span className="text-muted-foreground">(visible in the store)</span></span>
               </label>
             </CardContent>
           </Card>

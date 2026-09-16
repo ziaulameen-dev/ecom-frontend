@@ -1,6 +1,6 @@
 'use client';
 
-import { MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { confirm } from '@/components/confirm-dialog';
@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAdminCoupons, useCreateCoupon, useDeleteCoupon } from '@/features/admin';
+import { useAdminCoupons, useCreateCoupon, useDeleteCoupon, useUpdateCoupon } from '@/features/admin';
 import type { Coupon } from '@/lib/types';
 import { formatDate, money } from '@/lib/utils';
 
@@ -71,6 +71,7 @@ export default function AdminCouponsPage() {
                 <th className="px-4 py-3 font-medium">Min subtotal</th>
                 <th className="px-4 py-3 font-medium">Max discount</th>
                 <th className="px-4 py-3 font-medium">Redemptions</th>
+                <th className="px-4 py-3 font-medium">Per Customer</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Expires</th>
                 <th className="px-4 py-3 text-right font-medium">Action</th>
@@ -79,10 +80,10 @@ export default function AdminCouponsPage() {
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <tr key={i} className="border-b last:border-0"><td className="px-4 py-3" colSpan={8}><Skeleton className="h-10 w-full" /></td></tr>
+                  <tr key={i} className="border-b last:border-0"><td className="px-4 py-3" colSpan={9}><Skeleton className="h-10 w-full" /></td></tr>
                 ))
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">No coupons found.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-muted-foreground">No coupons found.</td></tr>
               ) : (
                 filtered.map((c) => <CouponRow key={c.id} coupon={c} />)
               )}
@@ -96,80 +97,189 @@ export default function AdminCouponsPage() {
 
 function CouponRow({ coupon }: { coupon: Coupon }) {
   const del = useDeleteCoupon();
+  const [editOpen, setEditOpen] = useState(false);
+
   return (
-    <tr className="border-b last:border-0 hover:bg-muted/30">
-      <td className="px-4 py-3 font-mono font-semibold">{coupon.code}</td>
-      <td className="px-4 py-3">
-        <Badge variant="secondary">{coupon.type === 'percent' ? `${coupon.value}%` : money(coupon.value)}</Badge>
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">{money(coupon.minSubtotalMinor)}</td>
-      <td className="px-4 py-3 text-muted-foreground">{coupon.maxDiscountMinor != null ? money(coupon.maxDiscountMinor) : '—'}</td>
-      <td className="px-4 py-3 text-muted-foreground">
-        {coupon.timesRedeemed} / {coupon.maxRedemptions ?? '∞'}
-      </td>
-      <td className="px-4 py-3">
-        <Badge variant={coupon.active ? 'default' : 'secondary'}>{coupon.active ? 'Active' : 'Inactive'}</Badge>
-      </td>
-      <td className="px-4 py-3 text-muted-foreground">{coupon.expiresAt ? formatDate(coupon.expiresAt) : '—'}</td>
-      <td className="px-4 py-3">
-        <div className="flex justify-end">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal className="size-4" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={async () => { if (await confirm({ title: 'Delete coupon?', description: `Coupon "${coupon.code}" will be removed.`, confirmText: 'Delete', destructive: true })) del.mutate(coupon.id, { onError: (e) => toast.error((e as Error).message) }); }}
-              >
-                <Trash2 className="size-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </td>
-    </tr>
+    <>
+      <tr className="border-b last:border-0 hover:bg-muted/30">
+        <td className="px-4 py-3 font-mono font-semibold">{coupon.code}</td>
+        <td className="px-4 py-3">
+          <Badge variant="secondary">{coupon.type === 'percent' ? `${coupon.value}%` : money(coupon.value)}</Badge>
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">{money(coupon.minSubtotalMinor)}</td>
+        <td className="px-4 py-3 text-muted-foreground">{coupon.maxDiscountMinor != null ? money(coupon.maxDiscountMinor) : '—'}</td>
+        <td className="px-4 py-3 text-muted-foreground">
+          {coupon.timesRedeemed} / {coupon.maxRedemptions ?? '∞'}
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">
+          {coupon.maxPerUser != null ? `${coupon.maxPerUser}` : '∞'}
+        </td>
+        <td className="px-4 py-3">
+          <Badge variant={coupon.active ? 'default' : 'secondary'}>{coupon.active ? 'Active' : 'Inactive'}</Badge>
+        </td>
+        <td className="px-4 py-3 text-muted-foreground">{coupon.expiresAt ? formatDate(coupon.expiresAt) : '—'}</td>
+        <td className="px-4 py-3">
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Actions"><MoreHorizontal className="size-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                  <Pencil className="size-4 mr-2" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={async () => {
+                    if (await confirm({
+                      title: 'Delete coupon?',
+                      description: `Coupon "${coupon.code}" will be removed.`,
+                      confirmText: 'Delete',
+                      destructive: true,
+                    })) {
+                      del.mutate(coupon.id, { onError: (e) => toast.error((e as Error).message) });
+                    }
+                  }}
+                >
+                  <Trash2 className="size-4 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </td>
+      </tr>
+
+      {/* Edit Coupon Dialog */}
+      {editOpen && (
+        <CouponDialog
+          coupon={coupon}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
+    </>
   );
 }
 
-/** Add a coupon in a dialog (code, type, value, min subtotal, max uses). */
-function CouponDialog({ trigger }: { trigger: React.ReactNode }) {
+interface CouponDialogProps {
+  trigger?: React.ReactNode;
+  coupon?: Coupon;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+/** Add or edit a coupon in a dialog (code, type, value, min subtotal, max uses, expiration, status). */
+function CouponDialog({ trigger, coupon, open: controlledOpen, onOpenChange }: CouponDialogProps) {
+  const isEditing = !!coupon;
   const create = useCreateCoupon();
-  const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ code: '', type: 'percent' as 'percent' | 'fixed', value: 10, minSubtotalMinor: 0, maxRedemptions: '', maxPerUser: '' });
+  const update = useUpdateCoupon();
+
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setUncontrolledOpen;
+
+  const [f, setF] = useState({
+    code: coupon?.code ?? '',
+    type: (coupon?.type ?? 'percent') as 'percent' | 'fixed',
+    value: coupon?.value ?? 10,
+    minSubtotalMinor: coupon?.minSubtotalMinor ?? 0,
+    maxDiscountMinor: coupon?.maxDiscountMinor != null ? String(coupon.maxDiscountMinor) : '',
+    maxRedemptions: coupon?.maxRedemptions != null ? String(coupon.maxRedemptions) : '',
+    maxPerUser: coupon?.maxPerUser != null ? String(coupon.maxPerUser) : '',
+    active: coupon?.active ?? true,
+    expiresAt: coupon?.expiresAt ? coupon.expiresAt.slice(0, 10) : '',
+  });
 
   function handleOpenChange(next: boolean) {
-    if (next) setF({ code: '', type: 'percent', value: 10, minSubtotalMinor: 0, maxRedemptions: '', maxPerUser: '' });
+    if (next) {
+      setF({
+        code: coupon?.code ?? '',
+        type: (coupon?.type ?? 'percent') as 'percent' | 'fixed',
+        value: coupon?.value ?? 10,
+        minSubtotalMinor: coupon?.minSubtotalMinor ?? 0,
+        maxDiscountMinor: coupon?.maxDiscountMinor != null ? String(coupon.maxDiscountMinor) : '',
+        maxRedemptions: coupon?.maxRedemptions != null ? String(coupon.maxRedemptions) : '',
+        maxPerUser: coupon?.maxPerUser != null ? String(coupon.maxPerUser) : '',
+        active: coupon?.active ?? true,
+        expiresAt: coupon?.expiresAt ? coupon.expiresAt.slice(0, 10) : '',
+      });
+    }
     setOpen(next);
   }
 
   async function submit() {
     try {
-      await create.mutateAsync({
-        code: f.code.trim(),
-        type: f.type,
-        value: Number(f.value),
-        minSubtotalMinor: Number(f.minSubtotalMinor) || 0,
-        maxRedemptions: f.maxRedemptions ? Number(f.maxRedemptions) : undefined,
-        maxPerUser: f.maxPerUser ? Number(f.maxPerUser) : undefined,
-      });
-      toast.success('Coupon created');
+      if (isEditing) {
+        await update.mutateAsync({
+          id: coupon.id,
+          body: {
+            type: f.type,
+            value: Number(f.value),
+            minSubtotalMinor: Number(f.minSubtotalMinor) || 0,
+            maxDiscountMinor: f.maxDiscountMinor ? Number(f.maxDiscountMinor) : null,
+            maxRedemptions: f.maxRedemptions ? Number(f.maxRedemptions) : null,
+            maxPerUser: f.maxPerUser ? Number(f.maxPerUser) : null,
+            active: f.active,
+            expiresAt: f.expiresAt ? new Date(`${f.expiresAt}T23:59:59Z`).toISOString() : null,
+          },
+        });
+        toast.success('Coupon updated');
+      } else {
+        await create.mutateAsync({
+          code: f.code.trim().toUpperCase(),
+          type: f.type,
+          value: Number(f.value),
+          minSubtotalMinor: Number(f.minSubtotalMinor) || 0,
+          maxDiscountMinor: f.maxDiscountMinor ? Number(f.maxDiscountMinor) : undefined,
+          maxRedemptions: f.maxRedemptions ? Number(f.maxRedemptions) : undefined,
+          maxPerUser: f.maxPerUser ? Number(f.maxPerUser) : undefined,
+          active: f.active,
+          expiresAt: f.expiresAt ? new Date(`${f.expiresAt}T23:59:59Z`).toISOString() : undefined,
+        });
+        toast.success('Coupon created');
+      }
       setOpen(false);
     } catch (e) {
       toast.error((e as Error).message);
     }
   }
 
+  const isPending = create.isPending || update.isPending;
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Add coupon</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>{isEditing ? `Edit Coupon: ${coupon.code}` : 'Add Coupon'}</DialogTitle>
+        </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="co-code">Code</Label>
-            <Input id="co-code" value={f.code} onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })} placeholder="WELCOME10" />
+        <div className="space-y-4 pt-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="co-code">Code</Label>
+              <Input
+                id="co-code"
+                value={f.code}
+                disabled={isEditing}
+                onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })}
+                placeholder="WELCOME10"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Status</Label>
+              <Select
+                value={f.active ? 'active' : 'inactive'}
+                onValueChange={(v) => setF({ ...f, active: v === 'active' })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -178,38 +288,64 @@ function CouponDialog({ trigger }: { trigger: React.ReactNode }) {
               <Select value={f.type} onValueChange={(v) => setF({ ...f, type: v as 'percent' | 'fixed' })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="percent">Percent</SelectItem>
-                  <SelectItem value="fixed">Fixed (paise)</SelectItem>
+                  <SelectItem value="percent">Percent (%)</SelectItem>
+                  <SelectItem value="fixed">Fixed Amount (paise)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="co-value">{f.type === 'percent' ? 'Percent' : 'Amount (paise)'}</Label>
+              <Label htmlFor="co-value">{f.type === 'percent' ? 'Discount Percentage (%)' : 'Discount Amount (paise)'}</Label>
               <Input id="co-value" type="number" value={f.value} onChange={(e) => setF({ ...f, value: Number(e.target.value) })} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="co-min">Min subtotal (paise)</Label>
+              <Label htmlFor="co-min">Min Order Subtotal (paise)</Label>
               <Input id="co-min" type="number" value={f.minSubtotalMinor} onChange={(e) => setF({ ...f, minSubtotalMinor: Number(e.target.value) })} />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="co-max">Max uses (total)</Label>
-              <Input id="co-max" type="number" value={f.maxRedemptions} onChange={(e) => setF({ ...f, maxRedemptions: e.target.value })} placeholder="∞" />
+              <Label htmlFor="co-maxdisc">Max Discount Cap (paise)</Label>
+              <Input
+                id="co-maxdisc"
+                type="number"
+                value={f.maxDiscountMinor}
+                onChange={(e) => setF({ ...f, maxDiscountMinor: e.target.value })}
+                placeholder="No limit"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="co-peruser">Max per customer</Label>
-              <Input id="co-peruser" type="number" value={f.maxPerUser} onChange={(e) => setF({ ...f, maxPerUser: e.target.value })} placeholder="∞" />
+              <Label htmlFor="co-max">Total Max Redemptions</Label>
+              <Input id="co-max" type="number" value={f.maxRedemptions} onChange={(e) => setF({ ...f, maxRedemptions: e.target.value })} placeholder="Unlimited (∞)" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="co-peruser">Max Uses Per Customer</Label>
+              <Input id="co-peruser" type="number" value={f.maxPerUser} onChange={(e) => setF({ ...f, maxPerUser: e.target.value })} placeholder="Unlimited (∞)" />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="co-expires">Expiration Date</Label>
+            <Input
+              id="co-expires"
+              type="date"
+              value={f.expiresAt}
+              onChange={(e) => setF({ ...f, expiresAt: e.target.value })}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="button" onClick={submit} disabled={f.code.trim().length < 3 || create.isPending}>{create.isPending ? 'Saving…' : 'Add coupon'}</Button>
+            <Button
+              type="button"
+              onClick={submit}
+              disabled={f.code.trim().length < 3 || isPending}
+            >
+              {isPending ? 'Saving…' : isEditing ? 'Save Changes' : 'Add Coupon'}
+            </Button>
           </div>
         </div>
       </DialogContent>
