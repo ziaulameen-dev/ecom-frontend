@@ -334,7 +334,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
                       className={cn(
-                        'flex h-9.5 items-center rounded-lg text-sm transition-all relative overflow-hidden',
+                        'flex h-9.5 items-center rounded-sm text-sm transition-all relative overflow-hidden',
                         active
                           ? 'bg-[#187b7b] text-white font-semibold shadow-xs'
                           : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -397,7 +397,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link
             href="/"
             className={cn(
-              'flex h-9.5 items-center rounded-lg text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors overflow-hidden',
+              'flex h-9.5 items-center rounded-sm text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors overflow-hidden',
               collapsed ? 'size-9.5 justify-center p-0' : 'w-full px-3 gap-3',
             )}
           >
