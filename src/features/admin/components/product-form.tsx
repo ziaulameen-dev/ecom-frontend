@@ -14,6 +14,7 @@ import { RichTextEditor } from '@/components/ui/rich-text-editor';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import type { AdminProduct, MediaItem } from '@/lib/types';
+import { cn } from '@/lib/utils';
 import { useAdminCategories } from '../hooks/use-admin-categories';
 import { useCreateProduct, useUpdateProduct } from '../hooks/use-admin-products';
 import { MediaManager } from './media-manager';
@@ -33,8 +34,7 @@ interface Props {
 /**
  * Create/edit a product against the real ecom-api fields:
  * name, slug, description, categoryId, stock, priceMinor, offerPriceMinor,
- * media (common images + videos; imageUrl cover is derived), active. (Weight,
- * package size and selling-type from the mockup aren't in the backend model.)
+ * media (common images + videos; imageUrl cover is derived), active, fulfillmentMethod.
  */
 export function ProductForm({ mode, product }: Props) {
   const router = useRouter();
@@ -62,6 +62,12 @@ export function ProductForm({ mode, product }: Props) {
         : [],
   );
   const [active, setActive] = useState(product?.active ?? true);
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<'automatic' | 'manual'>(
+    product?.fulfillmentMethod ?? 'automatic',
+  );
+  const [lowStockThreshold, setLowStockThreshold] = useState(
+    String(product?.lowStockThreshold ?? 5),
+  );
 
   const pending = create.isPending || update.isPending;
   // When a product has variants, price/stock live on each variant — the
@@ -82,6 +88,7 @@ export function ProductForm({ mode, product }: Props) {
           ? (mode === 'edit' ? null : undefined)
           : toPaise(offerPrice),
       stock: hasVariants ? 0 : Number(stock) || 0,
+      lowStockThreshold: Number(lowStockThreshold) >= 0 ? Number(lowStockThreshold) : 5,
       categoryId: categoryId || undefined,
       shortDescription: shortDescription.trim() || undefined,
       description: description.trim() || undefined,
@@ -89,6 +96,7 @@ export function ProductForm({ mode, product }: Props) {
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       media,
       active,
+      fulfillmentMethod,
     };
 
     try {
@@ -190,11 +198,25 @@ export function ProductForm({ mode, product }: Props) {
 
           <Card>
             <CardHeader><CardTitle className="text-base">Inventory</CardTitle></CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="flex flex-col gap-2 sm:max-w-40">
                 <Label htmlFor="p-stock">Quantity</Label>
                 <Input id="p-stock" type="number" min={0} value={hasVariants ? '0' : stock} onChange={(e) => setStock(e.target.value)} disabled={hasVariants} />
                 {hasVariants && <p className="text-xs text-muted-foreground">Managed per variant — set stock on each variant below.</p>}
+              </div>
+              <div className="flex flex-col gap-2 sm:max-w-sm">
+                <Label htmlFor="p-threshold">Low stock alert threshold</Label>
+                <Input
+                  id="p-threshold"
+                  type="number"
+                  min={0}
+                  value={lowStockThreshold}
+                  onChange={(e) => setLowStockThreshold(e.target.value)}
+                  placeholder="5"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Triggers admin badge warnings and automated email alerts when available inventory drops to or below this level. Default is 5.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -247,10 +269,84 @@ export function ProductForm({ mode, product }: Props) {
           </Card>
 
           <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Fulfillment Method</span>
+                <span
+                  className={cn(
+                    'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded',
+                    fulfillmentMethod === 'automatic'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300',
+                  )}
+                >
+                  {fulfillmentMethod}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Control how orders containing this item transition from Paid to Fulfilled.
+              </p>
+              <div className="grid gap-2">
+                <label
+                  onClick={() => setFulfillmentMethod('automatic')}
+                  className={cn(
+                    'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors text-left',
+                    fulfillmentMethod === 'automatic'
+                      ? 'border-[#187b7b] bg-[#187b7b]/5'
+                      : 'border-muted hover:border-foreground/20',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="fulfillmentMethod"
+                    value="automatic"
+                    checked={fulfillmentMethod === 'automatic'}
+                    onChange={() => setFulfillmentMethod('automatic')}
+                    className="mt-0.5 text-[#187b7b] focus:ring-[#187b7b]"
+                  />
+                  <div className="space-y-0.5 min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Automatic (Recommended)</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Checks stock upon payment. If inventory is confirmed, order automatically moves to <strong>Fulfilled</strong> (Packed/Ready).
+                    </p>
+                  </div>
+                </label>
+
+                <label
+                  onClick={() => setFulfillmentMethod('manual')}
+                  className={cn(
+                    'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors text-left',
+                    fulfillmentMethod === 'manual'
+                      ? 'border-[#187b7b] bg-[#187b7b]/5'
+                      : 'border-muted hover:border-foreground/20',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="fulfillmentMethod"
+                    value="manual"
+                    checked={fulfillmentMethod === 'manual'}
+                    onChange={() => setFulfillmentMethod('manual')}
+                    className="mt-0.5 text-[#187b7b] focus:ring-[#187b7b]"
+                  />
+                  <div className="space-y-0.5 min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Manual</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
+                      Order remains in <strong>Paid / Processing</strong>. Staff must manually inspect and click <em>Fulfil</em>.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader><CardTitle className="text-base">Status</CardTitle></CardHeader>
             <CardContent>
               <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none">
-                <Checkbox checked={active} onCheckedChange={setActive} className="rounded-xs" />
+                <Checkbox checked={active} onCheckedChange={setActive} className="rounded-sm" />
                 <span>Active <span className="text-muted-foreground">(visible in the store)</span></span>
               </label>
             </CardContent>

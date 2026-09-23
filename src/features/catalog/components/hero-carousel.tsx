@@ -127,7 +127,7 @@ export function HeroCarousel({
                   key={`dt-p-${p?.key ?? pIdx}`}
                   href={p ? productHref(p) : currentBanner.linkUrl}
                   className={cn(
-                    'group/card relative block w-[196px] xl:w-[226px] bg-neutral-900 overflow-hidden shadow-md',
+                    'group/card relative block w-[196px] xl:w-[226px] bg-neutral-900 overflow-hidden shadow-md rounded-none',
                     CARD_ASPECT_CLASS,
                   )}
                 >
@@ -274,7 +274,7 @@ export function HeroCarousel({
               key={`mob-p-${p?.key ?? pIdx}`}
               href={p ? productHref(p) : currentBanner.linkUrl}
               className={cn(
-                'relative bg-neutral-900 overflow-hidden block rounded-xs',
+                'relative bg-neutral-900 overflow-hidden block rounded-none',
                 CARD_ASPECT_CLASS,
               )}
             >

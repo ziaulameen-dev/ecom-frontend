@@ -2,6 +2,8 @@ import { api } from '@/lib/api-client';
 import type {
   AdminCustomer,
   AdminOrder,
+  AdminOrdersQuery,
+  AdminOrdersResponse,
   AdminProduct,
   AdminReturn,
   AttributeType,
@@ -42,6 +44,12 @@ export function createProduct(body: Record<string, unknown>) {
 }
 export function updateProduct(input: { id: string; body: Record<string, unknown> }) {
   return api.patch(`/api/products/${input.id}`, input.body);
+}
+export function bulkUpdateFulfillmentMethod(input: {
+  productIds?: string[];
+  fulfillmentMethod: 'automatic' | 'manual';
+}) {
+  return api.patch<{ updated: number }>('/api/products/admin/bulk-fulfillment', input);
 }
 export function deleteProduct(id: string) {
   return api.del(`/api/products/${id}`);
@@ -99,11 +107,37 @@ export function deleteAttributeValue(id: string) {
 }
 
 /* ---- Orders -------------------------------------------------------------- */
-export function fetchAdminOrders() {
-  return api.get<AdminOrder[]>('/api/admin/orders');
+export function fetchAdminOrders(query?: AdminOrdersQuery) {
+  const params = new URLSearchParams();
+  if (query?.page) params.set('page', String(query.page));
+  if (query?.limit) params.set('limit', String(query.limit));
+  if (query?.search && query.search.trim()) params.set('search', query.search.trim());
+  if (query?.status && query.status !== 'all') params.set('status', query.status);
+  if (query?.paymentMethod && query.paymentMethod !== 'all') params.set('paymentMethod', query.paymentMethod);
+  if (query?.sortBy) params.set('sortBy', query.sortBy);
+  if (query?.startDate) params.set('startDate', query.startDate);
+  if (query?.endDate) params.set('endDate', query.endDate);
+
+  const qs = params.toString();
+  return api.get<AdminOrdersResponse>(qs ? `/api/admin/orders?${qs}` : '/api/admin/orders');
+}
+export function fetchAdminOrder(id: string) {
+  return api.get<AdminOrder>(`/api/admin/orders/${id}`);
 }
 export function updateOrderStatus(input: { id: string; status: OrderStatus }) {
   return api.patch(`/api/admin/orders/${input.id}/status`, { status: input.status });
+}
+/**
+ * Atomically set carrier + tracking number and transition the order to 'shipped'
+ * in a single API call. Use this instead of calling setTracking + updateStatus
+ * separately — the combined endpoint is atomic and can't leave the order
+ * in a half-shipped state.
+ */
+export function shipOrder(input: { id: string; carrier: string; trackingNumber: string }) {
+  return api.post<AdminOrder>(`/api/admin/orders/${input.id}/ship`, {
+    carrier: input.carrier,
+    trackingNumber: input.trackingNumber,
+  });
 }
 export function setTracking(input: { id: string; carrier: string; trackingNumber: string }) {
   return api.patch(`/api/admin/orders/${input.id}/tracking`, {

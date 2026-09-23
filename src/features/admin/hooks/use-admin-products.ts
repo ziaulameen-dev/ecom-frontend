@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminKeys } from '../keys';
 import {
   addVariant,
+  bulkUpdateFulfillmentMethod,
   createProduct,
   deleteProduct,
   deleteVariant,
@@ -28,6 +29,10 @@ export function useCreateProduct() {
 export function useUpdateProduct() {
   const inv = useInvalidate(adminKeys.products);
   return useMutation({ mutationFn: updateProduct, onSuccess: inv });
+}
+export function useBulkUpdateFulfillmentMethod() {
+  const inv = useInvalidate(adminKeys.products);
+  return useMutation({ mutationFn: bulkUpdateFulfillmentMethod, onSuccess: inv });
 }
 export function useDeleteProduct() {
   const inv = useInvalidate(adminKeys.products);

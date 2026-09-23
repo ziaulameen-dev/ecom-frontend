@@ -11,9 +11,10 @@ export interface CheckoutResult {
   status: string;
   currency: string;
   amounts: CheckoutAmounts;
-  paymentSessionId: string;
-  appId: string;
-  mode: 'sandbox' | 'production';
+  paymentMethod?: 'prepaid' | 'cod';
+  paymentSessionId?: string | null;
+  appId?: string;
+  mode?: 'sandbox' | 'production';
 }
 
 export interface CouponResult {

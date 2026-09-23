@@ -323,7 +323,7 @@ function AttributeDialog({ type, trigger }: { type?: AttributeType; trigger: Rea
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="md:p-6">
         <DrawerHeader>
           <DrawerTitle>{isEdit ? 'Edit Attribute' : 'Add Attribute'}</DrawerTitle>
         </DrawerHeader>

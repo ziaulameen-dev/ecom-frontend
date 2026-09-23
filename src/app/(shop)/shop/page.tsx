@@ -1,10 +1,9 @@
 'use client';
 
-import * as Sheet from '@radix-ui/react-dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import { Check, ChevronDown, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { ValueProps } from '@/components/value-props';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,7 +65,7 @@ function ShopSkeleton() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="flex flex-col gap-2">
-                <Skeleton className="aspect-[3/4] w-full rounded-none" />
+                <Skeleton className="aspect-[3/4] w-full rounded-sm" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-3 w-1/2" />
               </div>
@@ -434,8 +433,8 @@ function ShopInner() {
   const mobileFilters = <ShopFilters {...sharedFilterProps} hideTitle />;
 
   return (
-    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-semibold">{title}</h1>
+    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{title}</h1>
 
       {/* Active filter chips */}
       {activeCount > 0 && (
@@ -461,7 +460,7 @@ function ShopInner() {
         </div>
       )}
 
-      <div className="mt-6 flex flex-col gap-8 lg:flex-row">
+      <div className="mt-4 sm:mt-6 flex flex-col gap-8 lg:flex-row">
         {/* Desktop sidebar — sticky with dynamic viewport bounds */}
         <aside
           id="shop-filter-aside"
@@ -506,26 +505,17 @@ function ShopInner() {
         </div>
       </div>
 
-      <ValueProps className="mt-12" />
-
-      {/* Mobile filter — bottom sheet that slides up */}
-      <Sheet.Root open={mobileOpen} onOpenChange={setMobileOpen}>
-        <Sheet.Portal>
-          <Sheet.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Sheet.Content
-            aria-describedby={undefined}
-            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl border-t bg-background p-5 shadow-lg outline-none duration-300 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom"
-          >
-            <div className="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-muted" />
-            <Sheet.Title className="mb-2 shrink-0 text-lg font-semibold">Filter Options</Sheet.Title>
-            <div className="-mx-1 flex-1 overflow-y-auto px-1">{mobileFilters}</div>
-            <div className="mt-4 flex shrink-0 gap-2">
-              <Button variant="outline" className="flex-1" onClick={clearAll}>Clear all</Button>
-              <Button variant="primary" className="flex-1" onClick={() => setMobileOpen(false)}>Show {items.length} results</Button>
-            </div>
-          </Sheet.Content>
-        </Sheet.Portal>
-      </Sheet.Root>
+      {/* Mobile filter — bottom drawer with common drag-down-to-close handle */}
+      <Drawer open={mobileOpen} onOpenChange={setMobileOpen}>
+        <DrawerContent className="px-5 pb-5 flex flex-col max-h-[85vh] overflow-hidden">
+          <DrawerTitle className="mb-2 shrink-0 text-lg font-semibold">Filter Options</DrawerTitle>
+          <div className="-mx-1 flex-1 overflow-y-auto px-1">{mobileFilters}</div>
+          <div className="mt-4 flex shrink-0 gap-2">
+            <Button variant="outline" className="flex-1" onClick={clearAll}>Clear all</Button>
+            <Button variant="primary" className="flex-1" onClick={() => setMobileOpen(false)}>Show {items.length} results</Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
@@ -549,7 +539,7 @@ function ShopFilters({
   return (
     <div className="space-y-2.5 pb-6">
       {!hideTitle && (
-        <div className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Filter Options</div>
+        <div className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-4">Filter Options</div>
       )}
       {flatCats.length > 0 && (
         <Section title="By Categories" defaultOpen>

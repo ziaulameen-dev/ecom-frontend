@@ -1,6 +1,10 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { catalogKeys } from '../keys';
-import { fetchProduct, fetchProducts } from '../services/catalog.service';
+import {
+  fetchFrequentlyBoughtTogether,
+  fetchProduct,
+  fetchProducts,
+} from '../services/catalog.service';
 import type { ProductQuery } from '../types';
 
 export function useProducts(params: ProductQuery = {}) {
@@ -28,6 +32,14 @@ export function useProduct(idOrSlug: string) {
   return useQuery({
     queryKey: catalogKeys.product(idOrSlug),
     queryFn: () => fetchProduct(idOrSlug),
+    enabled: !!idOrSlug,
+  });
+}
+
+export function useFrequentlyBoughtTogether(idOrSlug: string, limit?: number) {
+  return useQuery({
+    queryKey: catalogKeys.frequentlyBoughtTogether(idOrSlug),
+    queryFn: () => fetchFrequentlyBoughtTogether(idOrSlug, limit),
     enabled: !!idOrSlug,
   });
 }

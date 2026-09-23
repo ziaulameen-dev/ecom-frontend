@@ -249,7 +249,7 @@ function VariantDialog({
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
       <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent className="md:p-6">
         <DrawerHeader>
           <DrawerTitle>{isEdit ? 'Edit variant' : 'Add variant'}</DrawerTitle>
         </DrawerHeader>
@@ -380,11 +380,11 @@ function VariantDialog({
 
           <div className="flex flex-wrap gap-4">
             <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <Checkbox checked={listedSeparately} onCheckedChange={setListedSeparately} className="rounded-xs" />
+              <Checkbox checked={listedSeparately} onCheckedChange={setListedSeparately} className="rounded-sm" />
               <span>List on shop</span>
             </label>
             <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-              <Checkbox checked={isDefault} onCheckedChange={setIsDefault} className="rounded-xs" />
+              <Checkbox checked={isDefault} onCheckedChange={setIsDefault} className="rounded-sm" />
               <span>Default variant</span>
             </label>
           </div>

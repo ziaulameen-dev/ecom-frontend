@@ -46,6 +46,12 @@ export function fetchProduct(idOrSlug: string) {
   return api.get<ProductDetail>(`/api/products/${idOrSlug}`);
 }
 
+export function fetchFrequentlyBoughtTogether(idOrSlug: string, limit?: number) {
+  return api.get<ProductDetail[]>(
+    `/api/products/${idOrSlug}/frequently-bought-together${limit ? `?limit=${limit}` : ''}`,
+  );
+}
+
 export function fetchReviews(productId: string) {
   return api.get<ReviewSummary>(`/api/products/${productId}/reviews`);
 }
@@ -97,8 +103,14 @@ export function fetchContent() {
   return api.get<SiteContent>('/api/content');
 }
 
-/** Admin: update FAQ and/or footer social links (either may be omitted). */
-export function setContent(input: { faqs?: FaqItem[]; socials?: SocialLink[] }) {
+/** Admin: update FAQ and/or footer social links / store settings. */
+export function setContent(input: {
+  faqs?: FaqItem[];
+  socials?: SocialLink[];
+  codEnabled?: boolean;
+  contactSupportEnabled?: boolean;
+  chatAttachmentsEnabled?: boolean;
+}) {
   return api.put<SiteContent>('/api/content', input);
 }
 

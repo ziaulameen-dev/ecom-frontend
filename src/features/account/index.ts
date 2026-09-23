@@ -6,7 +6,7 @@ export { accountKeys } from './keys';
 export type { AddressInput } from './types';
 
 export { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress } from './hooks/use-addresses';
-export { useMyOrders, useOrder, useCancelOrder } from './hooks/use-orders';
+export { useMyOrders, useOrder, useOrderTracking, useCancelOrder, useUpdateOrderAddress } from './hooks/use-orders';
 export { useMyReturns, useRequestReturn } from './hooks/use-returns';
 export { useUpdateProfile } from './hooks/use-profile';
 export { useCoupons } from './hooks/use-coupons';
@@ -16,3 +16,7 @@ export {
   useVerifyNewEmail,
 } from './hooks/use-email-change';
 export { useReviewable, useMyReviews, useSubmitReview } from './hooks/use-my-reviews';
+export type { OrderTrackingDetails, OrderTrackingActivity } from './services/account.service';
+export { fetchOrderTracking } from './services/account.service';
+export { OrderTimeline } from './components/order-timeline';
+export { OrderTrackingDrawer } from './components/order-tracking-drawer';

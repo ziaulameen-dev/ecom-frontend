@@ -16,6 +16,7 @@ export function validateCoupon(input: { code: string; subtotalMinor: number }) {
 export function checkout(input: {
   addressId: string;
   couponCode?: string;
+  paymentMethod?: 'prepaid' | 'cod';
 }) {
   return api.post<CheckoutResult>('/api/checkout', input);
 }

@@ -4,7 +4,6 @@ import { ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ValueProps } from '@/components/value-props';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useCategoryTree,
@@ -102,7 +101,7 @@ export function HomeClient() {
       {/* Hero — admin-managed banner carousel (falls back to a bundled image). */}
       <section className="w-full">
         {heroLoading ? (
-          <Skeleton className="w-full" style={{ aspectRatio: ratio }} />
+          <Skeleton className="w-full rounded-none" style={{ aspectRatio: ratio }} />
         ) : hero?.banners && hero.banners.length > 0 ? (
           <HeroCarousel
             banners={hero.banners}
@@ -110,7 +109,7 @@ export function HomeClient() {
           />
         ) : (
           <Link href="/shop" className="block">
-            <div className="relative w-full overflow-hidden bg-muted" style={{ aspectRatio: ratio }}>
+            <div className="relative w-full overflow-hidden rounded-none bg-muted" style={{ aspectRatio: ratio }}>
               <Image
                 src={DEFAULT_HERO}
                 alt="Shop the featured collection"
@@ -124,11 +123,6 @@ export function HomeClient() {
         )}
       </section>
 
-      {/* Trust / value-props band — directly below hero */}
-      <section className="mx-auto mt-6 sm:mt-10 max-w-[1500px] px-3 sm:px-6 lg:px-8">
-        <ValueProps />
-      </section>
-
       {/* Categories — 3-column Grid with dedicated max width on desktop */}
       {treeLoading ? (
         <section className="mx-auto mt-10 max-w-[950px] px-3 sm:px-6 lg:px-8">
@@ -136,7 +130,7 @@ export function HomeClient() {
           <div className="grid grid-cols-3 gap-2.5 sm:gap-6 md:gap-8">
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="flex flex-col items-center">
-                <Skeleton className="aspect-square w-full rounded-none" />
+                <Skeleton className="aspect-square w-full rounded-sm" />
                 <Skeleton className="mt-3.5 h-4 w-24" />
               </div>
             ))}
@@ -172,7 +166,7 @@ export function HomeClient() {
         {infiniteLoading && allFeedProducts.length === 0 ? (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[3/4] w-full rounded-none" />
+              <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
             ))}
           </div>
         ) : (
@@ -187,7 +181,7 @@ export function HomeClient() {
         {isFetchingNextPage && !isStopped && (
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[3/4] w-full rounded-none" />
+              <Skeleton key={i} className="aspect-[3/4] w-full rounded-sm" />
             ))}
           </div>
         )}

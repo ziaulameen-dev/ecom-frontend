@@ -18,7 +18,7 @@ export function CategoryCard({ category }: { category: Pick<Category, 'name' | '
       href={`/shop?category=${category.slug}`}
       className="group flex flex-col items-center text-center cursor-pointer select-none w-full"
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-[#f4f4f4] transition-all duration-300 group-hover:bg-[#ebebeb]">
+      <div className="relative aspect-square w-full overflow-hidden rounded-sm bg-[#f4f4f4] transition-all duration-300 group-hover:bg-[#ebebeb]">
         <Image
           src={src}
           alt={category.name}

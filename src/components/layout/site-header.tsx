@@ -20,6 +20,7 @@ import { useWishlist, useWishlistSync } from '@/features/wishlist';
 import { SbazwideLogo } from '@/components/brand/sbazwide-logo';
 import { SearchAutocomplete } from './search-autocomplete';
 import { STORE_NAME } from '@/lib/config';
+import { cn } from '@/lib/utils';
 
 // `false` on the server + first client render, `true` after hydration — lets us
 // show localStorage-backed counts without a hydration mismatch.
@@ -27,7 +28,7 @@ const noop = () => () => {};
 const useMounted = () => useSyncExternalStore(noop, () => true, () => false);
 
 const pill =
-  'inline-flex items-center gap-1.5 whitespace-nowrap rounded-xs border border-neutral-300 dark:border-neutral-700 bg-neutral-100/70 dark:bg-neutral-900 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-neutral-900 dark:text-neutral-100 transition-colors hover:border-foreground/60 hover:text-foreground hover:bg-neutral-200/80 dark:hover:bg-neutral-800';
+  'inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm border border-neutral-300 dark:border-neutral-700 bg-neutral-100/70 dark:bg-neutral-900 px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-widest text-neutral-900 dark:text-neutral-100 transition-colors hover:border-foreground/60 hover:text-foreground hover:bg-neutral-200/80 dark:hover:bg-neutral-800';
 // Second-layer links: plain text, no pill.
 const navText =
   'inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold uppercase tracking-widest text-neutral-800 dark:text-neutral-200 transition-colors hover:text-foreground';
@@ -138,7 +139,7 @@ export function SiteHeader() {
               onKeyDown={(e) => e.key === 'Escape' && setDesktopSearchOpen(false)}
               placeholder="Search…"
               aria-label="Search products"
-              className="h-8 w-full rounded-xs border border-neutral-300 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-900/80 pl-8 pr-3 text-[11px] font-medium uppercase tracking-widest text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-neutral-900 dark:focus:border-neutral-100 transition-colors"
+              className="h-8 w-full rounded-sm border border-neutral-300 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-900/80 pl-8 pr-3 text-[11px] font-medium uppercase tracking-widest text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-neutral-900 dark:focus:border-neutral-100 transition-colors"
             />
           </form>
 
@@ -170,16 +171,16 @@ export function SiteHeader() {
             variant="ghost"
             size="icon"
             aria-label="Search"
-            className="size-9 rounded-xs text-neutral-800 dark:text-neutral-200 sm:hidden"
+            className="size-9 rounded-full text-neutral-800 dark:text-neutral-200 sm:hidden"
             onClick={() => setSearchOpen(true)}
           >
             <Search />
           </Button>
           <Link href="/account" aria-label="Account">
-            <Button variant="ghost" size="icon" className="size-9 rounded-xs text-neutral-800 dark:text-neutral-200"><User /></Button>
+            <Button variant="ghost" size="icon" className="size-9 rounded-full text-neutral-800 dark:text-neutral-200"><User /></Button>
           </Link>
           <Link href="/wishlist" aria-label="Wishlist" className="hidden sm:inline-flex">
-            <Button variant="ghost" size="icon" className="size-9 rounded-xs text-neutral-800 dark:text-neutral-200">
+            <Button variant="ghost" size="icon" className="size-9 rounded-full text-neutral-800 dark:text-neutral-200">
               <span className="relative inline-flex">
                 <Heart />
                 {mounted && wishCount > 0 && (
@@ -194,7 +195,7 @@ export function SiteHeader() {
             </Button>
           </Link>
           <Link href="/cart" aria-label="Cart">
-            <Button variant="ghost" size="icon" className="size-9 rounded-xs text-neutral-800 dark:text-neutral-200">
+            <Button variant="ghost" size="icon" className="size-9 rounded-full text-neutral-800 dark:text-neutral-200">
               <span className="relative inline-flex">
                 <ShoppingBag />
                 {count > 0 && (
@@ -209,10 +210,10 @@ export function SiteHeader() {
             </Button>
           </Link>
           {me?.roles?.includes('admin') && (
-            <Link href="/admin" className={`${pill} ml-1 hidden md:inline-flex`}>Admin</Link>
+            <Link href="/admin" className={cn(pill, 'ml-1 hidden md:inline-flex')}>Admin</Link>
           )}
           {!me && (
-            <button type="button" onClick={() => openLogin()} className={`${pill} ml-1 hidden lg:inline-flex`}>
+            <button type="button" onClick={() => openLogin()} className={cn(pill, 'ml-1 hidden lg:inline-flex')}>
               Login
             </button>
           )}
@@ -222,7 +223,7 @@ export function SiteHeader() {
       {/* Row 2 — one scrollable strip on mobile; two clusters on desktop.
           Bottom border lives here (max-w-[1500px]) so it aligns with the content,
           not the full-width header. */}
-      <div className="mx-auto flex max-w-[1500px] items-center gap-5 overflow-x-auto border-b pb-2.5 px-3 sm:px-6 lg:px-8 md:justify-between md:overflow-x-visible">
+      <div className="mx-auto flex max-w-[1500px] items-center justify-between overflow-x-auto border-b pb-2.5 px-3 sm:px-6 lg:px-8 md:overflow-x-visible">
         <div className="flex shrink-0 items-center gap-5">
           <DropdownMenu>
             <DropdownMenuTrigger className={navText}>
@@ -238,17 +239,34 @@ export function SiteHeader() {
                   <Link href={`/shop?category=${c.slug}`}>{c.name}</Link>
                 </DropdownMenuItem>
               ))}
+              {groupNames.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  {groupNames.map((name) => (
+                    <DropdownMenuItem key={name} asChild>
+                      <Link href={`/shop?category=${encodeURIComponent(name)}`}>{name}</Link>
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {tops.slice(0, 4).map((c) => (
-            <Link key={c.id} href={`/shop?category=${c.slug}`} className={navText}>{c.name}</Link>
+          {/* Near Category: Men and Women on Desktop */}
+          {groupNames.map((name) => (
+            <Link
+              key={name}
+              href={`/shop?category=${encodeURIComponent(name)}`}
+              className={cn(navText, 'hidden md:inline-flex')}
+            >
+              {name}
+            </Link>
           ))}
         </div>
 
-        <div className="flex shrink-0 items-center gap-5">
-          {groupNames.map((name) => (
-            <Link key={name} href={`/shop?category=${encodeURIComponent(name)}`} className={navText}>{name}</Link>
+        <div className="flex shrink-0 items-center gap-4 sm:gap-5">
+          {tops.slice(0, 4).map((c) => (
+            <Link key={c.id} href={`/shop?category=${c.slug}`} className={navText}>{c.name}</Link>
           ))}
         </div>
       </div>
@@ -267,7 +285,7 @@ export function SiteHeader() {
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search…"
               aria-label="Search products"
-              className="h-8 w-full rounded-xs border border-neutral-300 dark:border-neutral-700 bg-background shadow-md pl-8 pr-3 text-[11px] font-medium uppercase tracking-widest text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-neutral-900 dark:focus:border-neutral-100 transition-colors"
+              className="h-8 w-full rounded-sm border border-neutral-300 dark:border-neutral-700 bg-background shadow-md pl-8 pr-3 text-[11px] font-medium uppercase tracking-widest text-neutral-900 dark:text-neutral-100 outline-none placeholder:text-neutral-500 focus:border-neutral-900 dark:focus:border-neutral-100 transition-colors"
             />
           </form>
 

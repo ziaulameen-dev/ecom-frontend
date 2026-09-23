@@ -23,7 +23,7 @@ function Btn({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       className={cn(
-        'grid size-8 place-items-center rounded-xs transition-colors hover:bg-accent disabled:opacity-40',
+        'grid size-8 place-items-center rounded-sm transition-colors hover:bg-accent disabled:opacity-40',
         active && 'bg-accent text-foreground',
       )}
     >
@@ -87,7 +87,7 @@ export function RichTextEditor({
   });
 
   return (
-    <div className="overflow-hidden rounded-xs border">
+    <div className="overflow-hidden rounded-sm border">
       {editor && <Toolbar editor={editor} />}
       <EditorContent editor={editor} />
     </div>

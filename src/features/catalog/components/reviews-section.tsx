@@ -9,7 +9,7 @@ import { formatDate, mediaSrc } from '@/lib/utils';
 export function ReviewsSection({ productId }: { productId: string }) {
   const { data, isLoading } = useReviews(productId);
 
-  if (isLoading) return <Skeleton className="h-40 w-full rounded-xs" />;
+  if (isLoading) return <Skeleton className="h-40 w-full rounded-sm" />;
   const summary = data ?? { average: 0, count: 0, items: [] };
 
   const buckets = [5, 4, 3, 2, 1].map((r) => ({
@@ -26,7 +26,7 @@ export function ReviewsSection({ productId }: { productId: string }) {
       ) : (
         <div className="mt-6 grid gap-10 md:grid-cols-[220px_1fr]">
           {/* Aggregate */}
-          <div className="flex flex-col items-center gap-2 rounded-xs border border-gray-200 p-6 bg-white shadow-xs">
+          <div className="flex flex-col items-center gap-2 rounded-sm border border-gray-200 p-6 bg-white shadow-xs">
             <div className="text-5xl font-bold text-gray-900">{summary.average.toFixed(1)}</div>
             <RatingStars value={summary.average} />
             <div className="text-sm text-gray-500 font-medium">{summary.count} reviews</div>
@@ -34,7 +34,7 @@ export function ReviewsSection({ productId }: { productId: string }) {
               {buckets.map((b) => (
                 <div key={b.r} className="flex items-center gap-2 text-xs">
                   <span className="w-3 text-gray-500 font-medium">{b.r}</span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-xs bg-gray-100">
+                  <div className="h-2 flex-1 overflow-hidden rounded-sm bg-gray-100">
                     <div
                       className="h-full bg-brand"
                       style={{ width: `${summary.count ? (b.n / summary.count) * 100 : 0}%` }}
@@ -65,7 +65,7 @@ export function ReviewsSection({ productId }: { productId: string }) {
                         href={mediaSrc(url)}
                         target="_blank"
                         rel="noreferrer"
-                        className="relative size-20 overflow-hidden rounded-xs border border-gray-200 transition hover:opacity-90"
+                        className="relative size-20 overflow-hidden rounded-sm border border-gray-200 transition hover:opacity-90"
                       >
                         <Image src={mediaSrc(url)} alt="Review photo" fill sizes="80px" className="object-cover" />
                       </a>

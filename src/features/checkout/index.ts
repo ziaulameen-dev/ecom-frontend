@@ -6,3 +6,4 @@ export type { CheckoutAmounts, CheckoutResult, CouponResult } from './types';
 
 export { useValidateCoupon } from './hooks/use-checkout';
 export { useCheckout } from './hooks/use-checkout';
+export { AvailableCouponsModal } from './components/available-coupons-modal';

@@ -2,10 +2,37 @@
 
 import { api } from '@/lib/api-client';
 import type {
-  ActiveCoupon, AdminReturn, Address, Order, OrderItem,
+  ActiveCoupon, AdminReturn, Address, Order, OrderItem, OrderStatus,
   Review, ReviewableProduct, User,
 } from '@/lib/types';
 import type { AddressInput } from '../types';
+
+export interface OrderTrackingActivity {
+  date: string;
+  activity: string;
+  location: string;
+  status?: string;
+  srStatus?: string;
+  srStatusLabel?: string;
+}
+
+export interface OrderTrackingDetails {
+  orderId: string;
+  reference: string | null;
+  status: OrderStatus;
+  paymentMethod: 'prepaid' | 'cod';
+  carrier: string | null;
+  trackingNumber: string | null;
+  trackUrl: string | null;
+  etd: string | null;
+  currentStatus: string;
+  origin: string;
+  destination: string;
+  consigneeName: string;
+  shippingAddress: any;
+  items: Array<{ name: string; quantity: number; variantLabel: string | null }>;
+  activities: OrderTrackingActivity[];
+}
 
 /**
  * Account HTTP calls (the "service" layer). These are thin wrappers over the
@@ -47,9 +74,31 @@ export function fetchOrder(id: string) {
   return api.get<Order>(`/api/orders/${id}`);
 }
 
+/** Fetch live tracking and activity logs for an order. */
+export function fetchOrderTracking(id: string) {
+  return api.get<OrderTrackingDetails>(`/api/orders/${id}/tracking`);
+}
+
 /** Cancel an order, optionally with a reason. */
 export function cancelOrder(input: { id: string; reason?: string }) {
   return api.post(`/api/orders/${input.id}/cancel`, input.reason ? { reason: input.reason } : {});
+}
+
+/** Update delivery address on an unfulfilled order. */
+export function updateOrderAddress(input: {
+  id: string;
+  address: {
+    fullName: string;
+    phone: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+}) {
+  return api.patch(`/api/orders/${input.id}/address`, input.address);
 }
 
 // ---- Returns (RMA) --------------------------------------------------------

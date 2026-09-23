@@ -38,6 +38,7 @@ import { API_BASE } from '@/lib/config';
 import { cartId } from '@/lib/session';
 import type { CartView } from '@/lib/types';
 import { useMediaQuery } from '@/lib/use-media-query';
+import { disconnectChatSocket } from '@/features/chat/services/chat-socket';
 import { GoogleIcon } from './google-icon';
 
 /** Global passwordless-login modal (mounted once in Providers).
@@ -72,6 +73,7 @@ export function LoginModal() {
     if (result === 'google_success') {
       (async () => {
         try {
+          disconnectChatSocket();
           const merged = await api.post<CartView>('/api/cart/merge');
           if (merged?.id) {
             qc.setQueryData(cartKeys.cart, merged);
@@ -81,7 +83,8 @@ export function LoginModal() {
         } finally {
           cartId.clear();
         }
-        qc.invalidateQueries({ queryKey: authKeys.me });
+        await qc.invalidateQueries({ queryKey: authKeys.me, refetchType: 'all' });
+        await qc.invalidateQueries({ queryKey: ['chat'] });
       })();
     } else if (result === 'google_error') {
       setError('Google sign-in failed. Please try again.');
@@ -132,6 +135,7 @@ export function LoginModal() {
         name: name.trim() || undefined,
         gender: gender || undefined,
       });
+      await qc.refetchQueries({ queryKey: authKeys.me });
       const dest = next;
       close();
       reset();
@@ -144,7 +148,7 @@ export function LoginModal() {
   const formBody = (
     <>
       {error && (
-        <div className="rounded-xs bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 dark:text-red-400 text-center font-medium">
+        <div className="rounded-sm bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 dark:text-red-400 text-center font-medium">
           {error}
         </div>
       )}
@@ -267,7 +271,7 @@ export function LoginModal() {
   // Mobile Bottom Drawer view
   return (
     <Drawer open={open} onOpenChange={(v) => { if (!v) { close(); reset(); } }}>
-      <DrawerContent className="px-5 pt-3 pb-8 rounded-t-2xl max-h-[85vh] overflow-y-auto">
+      <DrawerContent className="px-5 pb-8 rounded-t-2xl max-h-[85vh] overflow-y-auto">
         <DrawerHeader className="items-center text-center pb-2">
           <DrawerTitle className="text-xl font-bold">
             {step === 'email' ? 'Sign in or create account' : 'Enter your code'}

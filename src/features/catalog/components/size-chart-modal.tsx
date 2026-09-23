@@ -63,7 +63,7 @@ export function SizeChartModal({
           {/* Custom Size Chart Image */}
           {sizeChartImageUrl && (
             <div className="space-y-1">
-              <div className="relative w-full aspect-[4/3] rounded-xs overflow-hidden border border-gray-200 bg-gray-50">
+              <div className="relative w-full aspect-[4/3] rounded-sm overflow-hidden border border-gray-200 bg-gray-50">
                 <Image
                   src={mediaSrc(sizeChartImageUrl)}
                   alt="Size Guide Chart"
@@ -80,7 +80,7 @@ export function SizeChartModal({
           {/* Custom Admin Table (if defined on Attribute) */}
           {hasCustomTable ? (
             <div className="space-y-1">
-              <div className="overflow-x-auto border border-gray-200 rounded-xs">
+              <div className="overflow-x-auto border border-gray-200 rounded-sm">
                 <table className="min-w-max w-full text-center text-xs">
                   <thead className="bg-gray-100 font-bold text-gray-700 uppercase border-b border-gray-200">
                     <tr>
@@ -115,12 +115,12 @@ export function SizeChartModal({
             /* Standard Fallback Measurement Table */
             <>
               <div className="flex justify-center my-2">
-                <div className="inline-flex rounded-xs border border-gray-200 p-1 bg-gray-50">
+                <div className="inline-flex rounded-sm border border-gray-200 p-1 bg-gray-50">
                   <button
                     type="button"
                     onClick={() => setUnit('in')}
                     className={cn(
-                      'px-4 py-1.5 text-xs font-semibold rounded-xs transition-colors',
+                      'px-4 py-1.5 text-xs font-semibold rounded-sm transition-colors',
                       unit === 'in'
                         ? 'bg-white text-gray-900 shadow-xs'
                         : 'text-gray-500 hover:text-gray-900'
@@ -132,7 +132,7 @@ export function SizeChartModal({
                     type="button"
                     onClick={() => setUnit('cm')}
                     className={cn(
-                      'px-4 py-1.5 text-xs font-semibold rounded-xs transition-colors',
+                      'px-4 py-1.5 text-xs font-semibold rounded-sm transition-colors',
                       unit === 'cm'
                         ? 'bg-white text-gray-900 shadow-xs'
                         : 'text-gray-500 hover:text-gray-900'
@@ -143,7 +143,7 @@ export function SizeChartModal({
                 </div>
               </div>
 
-              <div className="overflow-x-auto border border-gray-200 rounded-xs">
+              <div className="overflow-x-auto border border-gray-200 rounded-sm">
                 <table className="min-w-max w-full text-center text-xs">
                   <thead className="bg-gray-100 font-bold text-gray-700 uppercase border-b border-gray-200">
                     <tr>

@@ -1,17 +1,18 @@
 'use client';
 
 import {
-  AlertCircle, BadgePercent, Ban, Check, CheckCircle2, ChevronRight, Clock, Copy, Gift, ImagePlus, LifeBuoy, LogOut, Mail,
-  MapPin, Package, Percent, RotateCcw, ShoppingBag, Sparkles, Star, Tag, Truck, User as UserIcon, X,
+  AlertCircle, BadgePercent, Ban, Check, CheckCircle2, ChevronRight, Clock, Copy, Edit2, Gift, ImagePlus, LifeBuoy, LogOut, Mail,
+  MapPin, Package, Percent, RotateCcw, ShoppingBag, Sparkles, Star, Tag, Trash2, Truck, User as UserIcon, X, XCircle,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { AuthImage } from '@/components/auth-image';
 import { confirm } from '@/components/confirm-dialog';
+import { TaxInvoiceModal } from '@/components/invoice/tax-invoice';
 import { RatingStars } from '@/components/rating-stars';
-import { ValueProps } from '@/components/value-props';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useUploadProductImage } from '@/features/admin';
 import { useAuthModal, useLogout, useMe } from '@/features/auth';
+import { useAddToCart } from '@/features/cart';
 import {
   useAddresses,
   useCancelOrder,
@@ -45,30 +47,33 @@ import {
   useRequestEmailChange,
   useReviewable,
   useSubmitReview,
+  useUpdateOrderAddress,
   useUpdateProfile,
   useVerifyNewEmail,
   useVerifyOldEmail,
+  OrderTimeline,
+  OrderTrackingDrawer,
   type AddressInput,
 } from '@/features/account';
 import { AddressForm } from '@/features/account/components/address-form';
 import { ReturnForm } from '@/features/account/components/return-form';
-import { useProduct } from '@/features/catalog';
-import type { ActiveCoupon, AdminReturn, Order, OrderStatus, ReviewableProduct, User } from '@/lib/types';
+import { useContent, useProduct } from '@/features/catalog';
+import type { ActiveCoupon, Address, AdminReturn, Order, OrderStatus, ReviewableProduct, User } from '@/lib/types';
 import { cn, formatDate, mediaSrc, money } from '@/lib/utils';
 
 const TABS = [
-  { key: 'profile', label: 'Personal Information', icon: UserIcon },
-  { key: 'orders', label: 'Manage Orders', icon: Package },
-  { key: 'addresses', label: 'Manage Address', icon: MapPin },
-  { key: 'coupons', label: 'Coupons', icon: Tag },
-  { key: 'reviews', label: 'Reviews', icon: Star },
-  { key: 'help', label: 'Help Center', icon: LifeBuoy },
+  { key: 'profile', label: 'Personal Information', shortLabel: 'Personal Information', icon: UserIcon },
+  { key: 'orders', label: 'Manage Orders', shortLabel: 'Orders', icon: Package },
+  { key: 'addresses', label: 'Manage Address', shortLabel: 'Address', icon: MapPin },
+  { key: 'coupons', label: 'Coupons', shortLabel: 'Coupons', icon: Tag },
+  { key: 'reviews', label: 'Reviews', shortLabel: 'Reviews', icon: Star },
+  { key: 'help', label: 'Help Center', shortLabel: 'Help Center', icon: LifeBuoy },
 ] as const;
 
 type TabKey = (typeof TABS)[number]['key'];
 
 const statusVariant: Record<OrderStatus, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
-  pending: 'secondary', processing: 'secondary', paid: 'success', fulfilled: 'default',
+  pending: 'secondary', confirmed: 'success', processing: 'default',
   shipped: 'default', delivered: 'success', cancelled: 'destructive', failed: 'destructive', refunded: 'outline',
 };
 
@@ -118,11 +123,13 @@ function AccountInner() {
     }
   }
 
-  const activeLabel = TABS.find((t) => t.key === rawTab)?.label ?? '';
+  const activeTab = TABS.find((t) => t.key === rawTab);
+  const activeLabel = activeTab?.label ?? '';
+  const activeShortLabel = activeTab?.shortLabel ?? activeLabel;
 
   return (
-    <div className="mx-auto max-w-[1500px] px-3 sm:px-6 lg:px-8 py-10">
-      <h1 className="hidden text-2xl font-semibold md:block">My account</h1>
+    <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-20 lg:pb-12">
+      <h1 className="hidden text-lg sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 md:block">My account</h1>
 
       {/* Desktop — sidebar + content */}
       <div className="mt-6 hidden gap-8 md:flex">
@@ -132,7 +139,7 @@ function AccountInner() {
               key={t.key}
               onClick={() => router.push(`/account?tab=${t.key}`)}
               className={cn(
-                'flex items-center gap-2 rounded-xs border px-4 py-3 text-left text-sm font-medium transition-colors',
+                'flex items-center gap-2 rounded-sm border px-4 py-3 text-left text-sm font-medium transition-colors',
                 desktopTab === t.key
                   ? 'border-primary-button bg-primary-button text-white'
                   : 'bg-card hover:bg-accent',
@@ -144,7 +151,7 @@ function AccountInner() {
           <button
             onClick={handleLogout}
             disabled={logout.isPending}
-            className="flex items-center gap-2 rounded-xs border bg-card px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
+            className="flex items-center gap-2 rounded-sm border bg-card px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent disabled:opacity-60"
           >
             <LogOut className="size-4" /> Logout
           </button>
@@ -156,21 +163,26 @@ function AccountInner() {
       <div className="md:hidden">
         {rawTab ? (
           <div>
-            <button
-              onClick={() => router.push('/account')}
-              className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ChevronRight className="size-4 rotate-180" /> My account
-            </button>
-            <h1 className="mb-4 text-xl font-semibold">{activeLabel}</h1>
+            {/* Mobile sub-page header: back + title in one row */}
+            <div className="mb-5 flex items-center gap-3 border-b pb-4">
+              <button
+                onClick={() => router.push('/account')}
+                className="grid size-8 shrink-0 place-items-center rounded-full border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label="Back to account"
+              >
+                <ChevronRight className="size-4 rotate-180" />
+              </button>
+              <h1 className="text-base font-semibold text-foreground">
+                <span className="xs:hidden">{activeShortLabel}</span>
+                <span className="hidden xs:inline">{activeLabel}</span>
+              </h1>
+            </div>
             {renderTab(rawTab)}
           </div>
         ) : (
           <MobileMenu me={me} onLogout={handleLogout} loggingOut={logout.isPending} />
         )}
       </div>
-
-      <ValueProps className="mt-12 sm:mt-16" />
     </div>
   );
 }
@@ -192,12 +204,12 @@ function MobileMenu({ me, onLogout, loggingOut }: { me: User; onLogout: () => vo
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">My account</h1>
+      <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">My account</h1>
 
       {/* Profile summary — tap to edit personal information */}
       <button
         onClick={() => router.push('/account?tab=profile')}
-        className="flex w-full items-center gap-4 rounded-xs border bg-card p-4 text-left transition-colors hover:bg-accent"
+        className="flex w-full items-center gap-4 rounded-sm border bg-card p-4 text-left transition-colors hover:bg-accent"
       >
         <Avatar name={me.name} email={me.email} className="size-14 text-xl" />
         <div className="min-w-0 flex-1">
@@ -212,16 +224,17 @@ function MobileMenu({ me, onLogout, loggingOut }: { me: User; onLogout: () => vo
           <button
             key={t.key}
             onClick={() => router.push(`/account?tab=${t.key}`)}
-            className="flex items-center gap-2 rounded-xs border px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent"
+            className="flex items-center gap-2 rounded-sm border px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-accent"
           >
             <t.icon className="size-4 shrink-0" />
-            {t.label}
+            <span className="xs:hidden">{t.shortLabel}</span>
+            <span className="hidden xs:inline">{t.label}</span>
           </button>
         ))}
         <button
           onClick={onLogout}
           disabled={loggingOut}
-          className="flex items-center gap-2 rounded-xs border px-4 py-3 text-left text-sm font-medium text-destructive transition-colors hover:bg-accent disabled:opacity-60"
+          className="flex items-center gap-2 rounded-sm border px-4 py-3 text-left text-sm font-medium text-destructive transition-colors hover:bg-accent disabled:opacity-60"
         >
           <LogOut className="size-4 shrink-0" />
           Logout
@@ -397,7 +410,7 @@ function EmailChangeDialog({ currentEmail }: { currentEmail: string }) {
   const formBody = (
     <div className="space-y-4 pt-2">
       {error && (
-        <div className="rounded-xs bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 font-medium text-center">
+        <div className="rounded-sm bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 font-medium text-center">
           {error}
         </div>
       )}
@@ -497,7 +510,7 @@ function EmailChangeDialog({ currentEmail }: { currentEmail: string }) {
         </Dialog>
       ) : (
         <Drawer open={open} onOpenChange={handleOpenChange}>
-          <DrawerContent className="px-5 pt-3 pb-8 rounded-t-2xl max-h-[85vh] overflow-y-auto">
+          <DrawerContent className="px-5 pb-8 rounded-t-2xl max-h-[85vh] overflow-y-auto">
             <DrawerHeader className="text-left pb-2">
               <DrawerTitle>{titleText}</DrawerTitle>
               <DrawerDescription>{descText}</DrawerDescription>
@@ -515,20 +528,21 @@ function CouponsTab() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="h-6 w-48 animate-pulse rounded-xs bg-muted" />
-        <div className="grid gap-4 sm:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-36 animate-pulse rounded-xs border border-neutral-200 dark:border-neutral-800 bg-muted/30" />
-          ))}
-        </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-28 rounded-sm border border-neutral-200 dark:border-neutral-800 p-3.5 space-y-2 bg-muted/20 animate-pulse">
+            <div className="h-5 w-28 bg-muted rounded-sm" />
+            <div className="h-4 w-48 bg-muted rounded-sm" />
+            <div className="h-8 w-full bg-muted rounded-sm mt-2" />
+          </div>
+        ))}
       </div>
     );
   }
 
   if (!coupons?.length) {
     return (
-      <Card className="rounded-xs border border-neutral-200 dark:border-neutral-800">
+      <Card className="rounded-sm border border-neutral-200 dark:border-neutral-800">
         <CardContent className="py-20 text-center">
           <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-primary-button/10 text-primary-button mb-4">
             <BadgePercent className="size-7" />
@@ -543,188 +557,136 @@ function CouponsTab() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-neutral-200/80 dark:border-neutral-800">
-        <div>
-          <h2 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <span>Available Coupons &amp; Offers</span>
-            <Badge variant="secondary" className="rounded-xs text-[11px] font-semibold">
-              {coupons.length}
-            </Badge>
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Copy any coupon code below and apply it at checkout to enjoy instant savings.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        {coupons.map((c) => (
-          <CouponCard key={c.code} coupon={c} />
-        ))}
-      </div>
+    <div className="grid gap-3 sm:grid-cols-2">
+      {coupons.map((c) => (
+        <CouponCard key={c.code} coupon={c} />
+      ))}
     </div>
   );
 }
 
 function CouponCard({ coupon }: { coupon: ActiveCoupon }) {
   const [copied, setCopied] = useState(false);
-  const isPercent = coupon.type === 'percent';
-  const discountPrimary = isPercent ? `${coupon.value}%` : money(coupon.value, 'INR');
-  const discountLabel = isPercent ? 'OFF' : 'FLAT OFF';
   const isAvailable = coupon.isAvailable !== false;
+  const isPercent = coupon.type === 'percent';
+  const discountHighlight = isPercent ? `${coupon.value}% OFF` : `FLAT ${money(coupon.value, 'INR')} OFF`;
+
+  function handleCopy() {
+    navigator.clipboard?.writeText(coupon.code);
+    setCopied(true);
+    toast.success(`Coupon code ${coupon.code} copied to clipboard!`);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <div
       className={cn(
-        'group relative flex flex-col sm:flex-row overflow-hidden rounded-xs border transition-all',
+        'relative rounded-sm border p-3.5 transition-all text-xs space-y-2.5 flex flex-col justify-between',
         isAvailable
-          ? 'border-neutral-200 dark:border-neutral-800 bg-card hover:border-neutral-300 dark:hover:border-neutral-700 shadow-xs hover:shadow-sm'
-          : 'border-neutral-200/60 dark:border-neutral-800/60 bg-muted/20 opacity-60 grayscale-[25%]',
+          ? 'border-neutral-200 dark:border-neutral-800 bg-card hover:border-primary-button/40 shadow-xs'
+          : 'border-neutral-200/60 dark:border-neutral-800/60 bg-muted/20 opacity-70'
       )}
     >
-      {/* Left Voucher Stub / Badge */}
-      <div
-        className={cn(
-          'relative flex sm:flex-col items-center justify-between sm:justify-center p-4 sm:p-5 border-b sm:border-b-0 sm:border-r border-dashed border-neutral-200 dark:border-neutral-800 sm:w-36 shrink-0 text-center',
-          isAvailable
-            ? 'bg-gradient-to-br from-primary-button/10 via-primary-button/5 to-transparent'
-            : 'bg-muted/40',
-        )}
-      >
-        <div className="flex sm:flex-col items-center gap-1.5 sm:gap-0">
-          <div className="flex items-baseline justify-center">
-            <span
-              className={cn(
-                'text-2xl sm:text-3xl font-black tracking-tight',
-                isAvailable ? 'text-foreground' : 'text-muted-foreground',
-              )}
-            >
-              {discountPrimary}
+      {/* Header Row */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold tracking-wider text-xs px-2 py-0.5 rounded-sm border border-dashed border-primary-button/60 bg-primary-button/5 text-primary-button">
+              {coupon.code}
             </span>
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="text-muted-foreground hover:text-foreground p-0.5 transition-colors"
+              title="Copy coupon code"
+              aria-label={`Copy coupon code ${coupon.code}`}
+            >
+              {copied ? (
+                <Check className="size-3 text-[#117a7a]" />
+              ) : (
+                <Copy className="size-3" />
+              )}
+            </button>
           </div>
-          <span
-            className={cn(
-              'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-xs sm:mt-1',
-              isAvailable
-                ? 'text-primary-button bg-primary-button/10'
-                : 'text-muted-foreground bg-muted',
+          <div className="font-bold text-sm text-foreground flex items-center gap-1.5">
+            <span>{discountHighlight}</span>
+            {coupon.maxDiscountMinor != null && isPercent && (
+              <span className="text-[11px] font-medium text-muted-foreground">
+                (Up to {money(coupon.maxDiscountMinor, 'INR')})
+              </span>
             )}
-          >
-            {isAvailable ? discountLabel : 'UNAVAILABLE'}
-          </span>
+          </div>
         </div>
 
-        <div className="sm:hidden flex items-center">
-          <span className="font-mono text-xs font-bold tracking-widest text-muted-foreground bg-background px-2.5 py-1 rounded-xs border border-dashed border-neutral-300 dark:border-neutral-700">
-            {coupon.code}
-          </span>
+        {/* Action Button: Copy */}
+        <div className="shrink-0">
+          {isAvailable ? (
+            <Button
+              size="sm"
+              onClick={handleCopy}
+              className={cn(
+                'h-8 px-3.5 font-bold text-xs uppercase shadow-xs transition-colors',
+                copied
+                  ? 'bg-[#117a7a] hover:bg-[#117a7a]/90 text-white'
+                  : 'bg-primary-button hover:bg-primary-button/90 text-white'
+              )}
+            >
+              {copied ? (
+                <>
+                  <Check className="size-3 mr-1" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="size-3 mr-1" />
+                  <span>Copy</span>
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled
+              variant="outline"
+              className="h-8 px-3 text-[11px] font-bold uppercase opacity-60"
+            >
+              Unavailable
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Right Details Section */}
-      <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between gap-3 min-w-0">
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="hidden sm:flex items-center gap-2">
-              <span
-                className={cn(
-                  'font-mono text-xs font-bold tracking-widest px-3 py-1 rounded-xs border border-dashed select-all',
-                  isAvailable
-                    ? 'text-foreground bg-muted/60 border-neutral-300 dark:border-neutral-700'
-                    : 'text-muted-foreground bg-muted/30 border-neutral-200 dark:border-neutral-800',
-                )}
-              >
-                {coupon.code}
-              </span>
-            </div>
-
-            {isAvailable ? (
-              <Button
-                size="sm"
-                variant={copied ? 'default' : 'outline'}
-                className={cn(
-                  'rounded-xs h-8 text-xs font-medium transition-colors w-full sm:w-auto shrink-0',
-                  copied
-                    ? 'bg-[#7EC151] hover:bg-[#7EC151]/90 text-white border-transparent'
-                    : 'border-neutral-300 dark:border-neutral-700 hover:bg-muted',
-                )}
-                onClick={() => {
-                  navigator.clipboard?.writeText(coupon.code);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-              >
-                {copied ? (
-                  <>
-                    <Check className="size-3.5 mr-1" strokeWidth={2.5} />
-                    <span>Copied!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="size-3.5 mr-1 text-muted-foreground" />
-                    <span>Copy Code</span>
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                disabled
-                variant="outline"
-                className="rounded-xs h-8 text-xs font-medium w-full sm:w-auto shrink-0 cursor-not-allowed opacity-60 bg-muted/40 border-neutral-200 dark:border-neutral-800 text-muted-foreground"
-              >
-                <Ban className="size-3.5 mr-1" />
-                <span>{coupon.unavailableReason || 'Unavailable'}</span>
-              </Button>
-            )}
-          </div>
-
-          <p
-            className={cn(
-              'text-xs font-medium pt-0.5',
-              isAvailable ? 'text-foreground' : 'text-muted-foreground',
-            )}
-          >
-            {isPercent
-              ? `Get ${coupon.value}% discount on your order`
-              : `Flat ${money(coupon.value, 'INR')} discount on your order`}
+      {/* Terms / Conditions */}
+      <div className="space-y-1 text-muted-foreground text-[11px]">
+        {coupon.minSubtotalMinor > 0 ? (
+          <p>
+            Applicable on orders above <span className="font-semibold text-foreground">{money(coupon.minSubtotalMinor, 'INR')}</span>
           </p>
+        ) : (
+          <p>No minimum order value</p>
+        )}
 
-          {!isAvailable && (
-            <div className="flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-medium pt-0.5">
-              <AlertCircle className="size-3.5 shrink-0" />
-              <span>{coupon.unavailableReason || 'This coupon is not available for your account.'}</span>
-            </div>
-          )}
-        </div>
+        {/* Details or benefit description */}
+        <p className="text-[#117a7a] dark:text-[#42a3a3] font-medium flex items-center gap-1">
+          <Sparkles className="size-3 shrink-0" />
+          <span>
+            {isPercent
+              ? `Get ${coupon.value}% off on your purchase`
+              : `Save ${money(coupon.value, 'INR')} flat on your order`}
+          </span>
+        </p>
 
-        {/* Conditions Badges */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-muted-foreground">
-          {coupon.minSubtotalMinor > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
-              <ShoppingBag className="size-3 text-muted-foreground shrink-0" />
-              <span>Min. spend {money(coupon.minSubtotalMinor, 'INR')}</span>
-            </span>
-          )}
-          {coupon.type === 'percent' && coupon.maxDiscountMinor != null && (
-            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
-              <Percent className="size-3 text-muted-foreground shrink-0" />
-              <span>Max savings {money(coupon.maxDiscountMinor, 'INR')}</span>
-            </span>
-          )}
-          {coupon.maxPerUser != null && (
-            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
-              <span>{coupon.usedCount ? `Used ${coupon.usedCount}/${coupon.maxPerUser}` : `${coupon.maxPerUser} per user`}</span>
-            </span>
-          )}
-          {coupon.expiresAt && (
-            <span className="inline-flex items-center gap-1 rounded-xs bg-muted/50 border border-neutral-200/80 dark:border-neutral-800 px-2 py-0.5">
-              <Clock className="size-3 text-muted-foreground shrink-0" />
-              <span>Expires {formatDate(coupon.expiresAt)}</span>
-            </span>
-          )}
-        </div>
+        {!isAvailable && (
+          <p className="text-muted-foreground italic">
+            {coupon.unavailableReason ?? 'Not available for your account'}
+          </p>
+        )}
+
+        {coupon.expiresAt && (
+          <p className="text-[10px] text-muted-foreground/80">
+            Expires {new Date(coupon.expiresAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -732,7 +694,7 @@ function CouponCard({ coupon }: { coupon: ActiveCoupon }) {
 
 function StatCard({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="rounded-xs border p-4">
+    <div className="rounded-sm border p-4">
       <div className="text-xs text-muted-foreground">{label}</div>
       <div className="mt-1 text-xl font-semibold">{value}</div>
       {note && <div className="mt-0.5 text-xs text-muted-foreground">{note}</div>}
@@ -919,10 +881,13 @@ function ReviewForm({
 }
 
 function HelpCenterTab() {
+  const { data: content } = useContent();
   const links = [
     { icon: LifeBuoy, title: 'FAQ', desc: 'Answers to common questions', href: '/faq' },
     { icon: Package, title: 'Orders & shipping', desc: 'Track, cancel or return an order', href: '/account?tab=orders' },
-    { icon: Mail, title: 'Contact support', desc: 'Email us — we reply within a day', href: 'mailto:support@example.com' },
+    ...(content?.contactSupportEnabled === true
+      ? [{ icon: Mail, title: 'Contact support', desc: 'Email us — we reply within a day', href: 'mailto:support@example.com' }]
+      : []),
   ];
   return (
     <Card>
@@ -932,7 +897,7 @@ function HelpCenterTab() {
           <Link
             key={title}
             href={href}
-            className="flex items-center gap-3 rounded-xs border p-4 transition-colors hover:bg-accent"
+            className="flex items-center gap-3 rounded-sm border p-4 transition-colors hover:bg-accent"
           >
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-button/10 text-primary-button">
               <Icon className="size-5" />
@@ -953,15 +918,15 @@ function HelpCenterTab() {
 // Returns are a post-delivery action; before that the customer can only cancel.
 const RETURNABLE = ['delivered'];
 // Cancel is allowed until the order ships (matches the API, which rejects a
-// cancel once shipped/fulfilled/delivered).
-const CANCELLABLE = ['pending', 'paid', 'processing'];
+// cancel once shipped/processing/delivered).
+const CANCELLABLE = ['pending', 'confirmed', 'processing'];
 const returnBadge: Record<string, 'default' | 'secondary' | 'success' | 'destructive' | 'outline'> = {
   requested: 'secondary', approved: 'default', received: 'default', refunded: 'success', rejected: 'destructive',
 };
 
 function OrderStatusPill({ status }: { status: OrderStatus }) {
   switch (status) {
-    case 'paid':
+    case 'confirmed':
     case 'delivered':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#7EC151]/15 text-[#5e9637] dark:text-[#7EC151] border border-[#7EC151]/30 capitalize">
@@ -970,14 +935,13 @@ function OrderStatusPill({ status }: { status: OrderStatus }) {
         </span>
       );
     case 'shipped':
-    case 'fulfilled':
+    case 'processing':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#117a7a]/15 text-[#117a7a] dark:text-[#42a3a3] border border-[#117a7a]/30 capitalize">
           <Truck className="size-3.5" />
           {status}
         </span>
       );
-    case 'processing':
     case 'pending':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 capitalize">
@@ -986,6 +950,12 @@ function OrderStatusPill({ status }: { status: OrderStatus }) {
         </span>
       );
     case 'cancelled':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-muted text-muted-foreground border border-border capitalize">
+          <XCircle className="size-3.5 text-muted-foreground" />
+          {status}
+        </span>
+      );
     case 'failed':
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30 capitalize">
@@ -1030,7 +1000,7 @@ function OrderItemThumbnail({
     null;
 
   return (
-    <div className="relative size-12 xs:size-14 rounded-xs bg-muted/60 border border-border/50 overflow-hidden flex items-center justify-center shrink-0 text-muted-foreground">
+    <div className="relative size-12 xs:size-14 rounded-sm bg-muted/60 border border-border/50 overflow-hidden flex items-center justify-center shrink-0 text-muted-foreground">
       {resolvedImg ? (
         <Image
           src={mediaSrc(resolvedImg)}
@@ -1047,24 +1017,32 @@ function OrderItemThumbnail({
 }
 
 function OrdersTab() {
+  const router = useRouter();
   const { data: orders, isLoading } = useMyOrders();
   const { data: returns } = useMyReturns();
   const cancel = useCancelOrder();
+  const updateAddress = useUpdateOrderAddress();
+  const addToCart = useAddToCart();
+
   const [returningId, setReturningId] = useState<string | null>(null);
   const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
   const [cancelReason, setCancelReason] = useState('');
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<Order | null>(null);
+  const [editingAddressOrder, setEditingAddressOrder] = useState<Order | null>(null);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   if (isLoading) {
     return (
       <div className="space-y-4">
         {[1, 2].map((i) => (
-          <Card key={i} className="p-4 sm:p-5 rounded-xs">
+          <Card key={i} className="p-4 sm:p-5 rounded-sm">
             <div className="flex justify-between items-center mb-4">
-              <div className="h-5 w-32 bg-muted rounded-xs animate-pulse" />
+              <div className="h-5 w-32 bg-muted rounded-sm animate-pulse" />
               <div className="h-5 w-20 bg-muted rounded-full animate-pulse" />
             </div>
-            <div className="h-16 w-full bg-muted/60 rounded-xs mb-3 animate-pulse" />
-            <div className="h-5 w-28 bg-muted rounded-xs animate-pulse" />
+            <div className="h-16 w-full bg-muted/60 rounded-sm mb-3 animate-pulse" />
+            <div className="h-5 w-28 bg-muted rounded-sm animate-pulse" />
           </Card>
         ))}
       </div>
@@ -1073,7 +1051,7 @@ function OrdersTab() {
 
   if (!orders?.length) {
     return (
-      <Card className="py-12 px-4 text-center rounded-xs">
+      <Card className="py-12 px-4 text-center rounded-sm">
         <Package className="mx-auto size-12 text-muted-foreground stroke-1 mb-3" />
         <h3 className="font-semibold text-base text-foreground">No orders found</h3>
         <p className="text-xs sm:text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
@@ -1100,14 +1078,40 @@ function OrdersTab() {
     } catch {}
   }
 
+  async function handleReorder(order: Order) {
+    try {
+      setReorderingId(order.id);
+      let count = 0;
+      for (const item of order.items) {
+        await addToCart.mutateAsync({
+          productId: item.productId,
+          variantId: item.variantId ?? undefined,
+          quantity: item.quantity,
+        });
+        count += item.quantity;
+      }
+      toast.success(`Added ${count} items to your cart`, {
+        action: {
+          label: 'View Cart',
+          onClick: () => router.push('/cart'),
+        },
+      });
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to reorder items');
+    } finally {
+      setReorderingId(null);
+    }
+  }
+
   return (
     <div className="space-y-4 sm:space-y-5">
       {orders.map((o) => {
         const ret = returnFor(o.id);
         const refText = o.reference ?? `#${o.id.slice(0, 8).toUpperCase()}`;
+        const canEditAddress = ['pending', 'processing', 'paid'].includes(o.status);
 
         return (
-          <Card key={o.id} className="overflow-hidden border shadow-xs rounded-xs">
+          <Card key={o.id} className="overflow-hidden border shadow-xs rounded-sm">
             {/* Header with Order ID, Date, Status */}
             <div className="bg-muted/40 px-3.5 py-3 sm:px-5 sm:py-3.5 border-b flex flex-wrap items-center justify-between gap-2.5">
               <div className="space-y-0.5 min-w-0">
@@ -1127,6 +1131,16 @@ function OrdersTab() {
                 <p className="text-[10px] xs:text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Total Amount</p>
                 <p className="text-xs xs:text-sm font-bold text-foreground">{money(o.totalMinor, o.currency)}</p>
               </div>
+            </div>
+
+            {/* Status Progress Stepper */}
+            <div className="px-3.5 sm:px-5 pt-3 pb-2.5 bg-card border-b">
+              <OrderTimeline
+                status={o.status}
+                createdAt={o.createdAt}
+                carrier={o.carrier}
+                cancelReason={o.cancelReason}
+              />
             </div>
 
             {/* Items List */}
@@ -1169,11 +1183,50 @@ function OrdersTab() {
 
               {/* Shipping Address snippet if present */}
               {o.shippingAddress && (
-                <div className="pt-2.5 border-t flex items-start gap-2 text-[11px] xs:text-xs text-muted-foreground">
-                  <MapPin className="size-3.5 shrink-0 text-muted-foreground mt-0.5" />
-                  <span className="truncate">
-                    Delivery to <strong className="font-semibold text-foreground">{o.shippingAddress.fullName}</strong> • {o.shippingAddress.line1}, {o.shippingAddress.city} {o.shippingAddress.postalCode}
-                  </span>
+                <div className="pt-2.5 border-t flex items-center justify-between gap-2 text-[11px] xs:text-xs text-muted-foreground">
+                  <div className="flex items-start gap-2 min-w-0">
+                    <MapPin className="size-3.5 shrink-0 text-muted-foreground mt-0.5" />
+                    <span className="truncate">
+                      Delivery to <strong className="font-semibold text-foreground">{o.shippingAddress.fullName}</strong> • {o.shippingAddress.line1}, {o.shippingAddress.city} {o.shippingAddress.postalCode}
+                    </span>
+                  </div>
+                  {canEditAddress && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditingAddressOrder(o)}
+                      className="h-6 px-2 text-[11px] text-[#187b7b] hover:text-[#187b7b] hover:bg-[#187b7b]/10 shrink-0"
+                    >
+                      Change Address
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Shipment Tracking info if dispatched */}
+              {(o.trackingNumber || o.carrier || ['shipped', 'delivered'].includes(o.status)) && (
+                <div className="pt-2.5 border-t flex flex-wrap items-center justify-between gap-2 text-xs bg-muted/30 rounded-sm p-2.5">
+                  <div className="flex items-center gap-2">
+                    <Truck className="size-4 text-[#187b7b] shrink-0" />
+                    <span className="font-semibold text-foreground">
+                      {o.status === 'delivered' ? 'Delivered' : 'Dispatched via'}{' '}
+                      <span className="font-bold text-foreground">{o.carrier || 'Courier'}</span>
+                    </span>
+                    {o.trackingNumber && (
+                      <span className="text-[11px] font-mono text-muted-foreground bg-background px-1.5 py-0.5 rounded-sm border border-border">
+                        AWB: {o.trackingNumber}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs font-bold text-[#187b7b] border-[#187b7b]/30 hover:bg-[#187b7b]/10 gap-1"
+                    onClick={() => setTrackingOrder(o)}
+                  >
+                    <Truck className="size-3.5" />
+                    Tracking Details →
+                  </Button>
                 </div>
               )}
 
@@ -1184,7 +1237,38 @@ function OrdersTab() {
                   {o.shippingMinor === 0 && <span className="text-[#7EC151] font-semibold">• FREE Delivery</span>}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-semibold gap-1"
+                    onClick={() => setInvoiceOrder(o)}
+                  >
+                    <span>Invoice</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-semibold gap-1 text-[#187b7b] border-[#187b7b]/30 hover:bg-[#187b7b]/10"
+                    disabled={reorderingId === o.id}
+                    onClick={() => handleReorder(o)}
+                  >
+                    <RotateCcw className="size-3.5" />
+                    <span>{reorderingId === o.id ? 'Adding…' : 'Buy Again'}</span>
+                  </Button>
+
+                  {!['cancelled', 'failed'].includes(o.status) && !(o.trackingNumber || ['shipped', 'delivered'].includes(o.status)) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs font-semibold gap-1 text-foreground hover:text-[#187b7b]"
+                      onClick={() => setTrackingOrder(o)}
+                    >
+                      <Truck className="size-3.5 text-[#187b7b]" />
+                      Track Order
+                    </Button>
+                  )}
                   {CANCELLABLE.includes(o.status) && (
                     <Button
                       variant="outline"
@@ -1209,17 +1293,12 @@ function OrdersTab() {
                       Request Return
                     </Button>
                   )}
-                  <Link href="/shop">
-                    <Button variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground hover:text-foreground">
-                      Shop More
-                    </Button>
-                  </Link>
                 </div>
               </div>
 
               {/* Return Details Card if return exists */}
               {ret && (
-                <div className="mt-3 rounded-xs border border-border/80 bg-muted/30 p-3 text-xs space-y-2">
+                <div className="mt-3 rounded-sm border border-border/80 bg-muted/30 p-3 text-xs space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <RotateCcw className="size-4 text-muted-foreground" />
@@ -1246,7 +1325,7 @@ function OrdersTab() {
                           key={key}
                           zoomable
                           path={`/api/returns/${ret.id}/images/${key.split('/').pop()}`}
-                          className="size-12 rounded-xs border object-cover"
+                          className="size-12 rounded-sm border object-cover"
                         />
                       ))}
                     </div>
@@ -1264,6 +1343,16 @@ function OrdersTab() {
           </Card>
         );
       })}
+
+      {/* Order Tracking Drawer (bottom sheet on mobile, slide-in right drawer on desktop) */}
+      <OrderTrackingDrawer
+        open={!!trackingOrder}
+        onOpenChange={(open) => !open && setTrackingOrder(null)}
+        orderId={trackingOrder?.id || ''}
+        reference={trackingOrder?.reference}
+        carrier={trackingOrder?.carrier}
+        trackingNumber={trackingOrder?.trackingNumber}
+      />
 
       {/* Cancel Confirmation Dialog */}
       <Dialog open={!!cancellingOrder} onOpenChange={(open) => !open && setCancellingOrder(null)}>
@@ -1311,7 +1400,157 @@ function OrdersTab() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Tax Invoice Modal */}
+      {invoiceOrder && (
+        <TaxInvoiceModal
+          order={invoiceOrder}
+          open={!!invoiceOrder}
+          onOpenChange={(open) => !open && setInvoiceOrder(null)}
+        />
+      )}
+
+      {/* Edit Delivery Address Dialog */}
+      {editingAddressOrder && (
+        <EditOrderAddressDialog
+          order={editingAddressOrder}
+          open={!!editingAddressOrder}
+          onOpenChange={(open) => !open && setEditingAddressOrder(null)}
+          onSave={async (addr) => {
+            try {
+              await updateAddress.mutateAsync({
+                id: editingAddressOrder.id,
+                address: addr,
+              });
+              toast.success('Delivery address updated successfully');
+              setEditingAddressOrder(null);
+            } catch (err: any) {
+              toast.error(err?.message || 'Failed to update delivery address');
+            }
+          }}
+          isPending={updateAddress.isPending}
+        />
+      )}
     </div>
+  );
+}
+
+function EditOrderAddressDialog({
+  order,
+  open,
+  onOpenChange,
+  onSave,
+  isPending,
+}: {
+  order: Order;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (addr: {
+    fullName: string;
+    phone: string;
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  }) => Promise<void>;
+  isPending: boolean;
+}) {
+  const current = order.shippingAddress;
+  const [fullName, setFullName] = useState(current?.fullName || '');
+  const [phone, setPhone] = useState(current?.phone || '');
+  const [line1, setLine1] = useState(current?.line1 || '');
+  const [line2, setLine2] = useState(current?.line2 || '');
+  const [city, setCity] = useState(current?.city || '');
+  const [state, setState] = useState(current?.state || '');
+  const [postalCode, setPostalCode] = useState(current?.postalCode || '');
+  const [country, setCountry] = useState(current?.country || 'India');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim() || !phone.trim() || !line1.trim() || !city.trim() || !postalCode.trim()) {
+      toast.error('Please fill in all required address fields');
+      return;
+    }
+    onSave({
+      fullName: fullName.trim(),
+      phone: phone.trim(),
+      line1: line1.trim(),
+      line2: line2.trim() || undefined,
+      city: city.trim(),
+      state: state.trim(),
+      postalCode: postalCode.trim(),
+      country: country.trim(),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MapPin className="size-4 text-[#187b7b]" />
+            <span>Update Delivery Address</span>
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Edit your shipping destination before order dispatch.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-3 py-2 text-xs">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="edit-name" className="text-[11px] font-semibold">Full Name *</Label>
+              <Input id="edit-name" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-phone" className="text-[11px] font-semibold">Phone Number *</Label>
+              <Input id="edit-phone" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="edit-line1" className="text-[11px] font-semibold">Street Address / House No. *</Label>
+            <Input id="edit-line1" value={line1} onChange={(e) => setLine1(e.target.value)} required />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="edit-line2" className="text-[11px] font-semibold">Apartment, Suite, Landmark (Optional)</Label>
+            <Input id="edit-line2" value={line2} onChange={(e) => setLine2(e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="edit-city" className="text-[11px] font-semibold">City *</Label>
+              <Input id="edit-city" value={city} onChange={(e) => setCity(e.target.value)} required />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-state" className="text-[11px] font-semibold">State *</Label>
+              <Input id="edit-state" value={state} onChange={(e) => setState(e.target.value)} required />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="edit-pin" className="text-[11px] font-semibold">Pincode *</Label>
+              <Input id="edit-pin" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3">
+            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isPending}
+              className="bg-[#187b7b] hover:bg-[#187b7b]/90 text-white font-bold"
+            >
+              {isPending ? 'Saving…' : 'Save Address'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1321,7 +1560,7 @@ function AddressesTab() {
   const update = useUpdateAddress();
   const del = useDeleteAddress();
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [addrError, setAddrError] = useState<string | null>(null);
 
   async function add(values: AddressInput) {
@@ -1334,81 +1573,149 @@ function AddressesTab() {
     }
   }
 
-  async function saveEdit(id: string, values: AddressInput) {
+  async function saveEdit(values: AddressInput) {
+    if (!editingAddress) return;
     setAddrError(null);
     try {
-      await update.mutateAsync({ id, input: values });
-      setEditingId(null);
+      await update.mutateAsync({ id: editingAddress.id, input: values });
+      setEditingAddress(null);
     } catch (e) {
       setAddrError((e as Error).message);
     }
   }
 
+  async function handleDelete(a: Address) {
+    if (await confirm({
+      title: 'Remove address?',
+      description: `"${a.fullName}, ${a.line1}" will be permanently removed.`,
+      confirmText: 'Remove',
+      destructive: true,
+    })) {
+      del.mutate(a.id, { onError: (e) => setAddrError((e as Error).message) });
+      if (editingAddress?.id === a.id) setEditingAddress(null);
+    }
+  }
+
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle>Addresses</CardTitle>
-        {!adding && <Button size="sm" variant="outline" onClick={() => { setAdding(true); setEditingId(null); setAddrError(null); }}>+ Add</Button>}
+      <CardHeader className="p-3.5 sm:px-6 sm:py-4 border-b">
+        <CardTitle className="flex items-center gap-2 text-sm sm:text-base font-bold">
+          <MapPin className="size-4 text-primary-button" />
+          Saved Addresses
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="p-3.5 sm:p-6 space-y-4">
         {addrError && (
-          <div className="rounded-xs bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 font-medium">
+          <div className="rounded-sm bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 font-medium">
             {addrError}
           </div>
         )}
-        {isLoading && <p className="text-muted-foreground">Loading…</p>}
-        {addresses?.map((a) => (
-          editingId === a.id ? (
-            <div key={a.id} className="rounded-xs border p-4">
-              <AddressForm
-                submitLabel="Update address"
-                submitting={update.isPending}
-                defaultValues={{
-                  fullName: a.fullName,
-                  phone: a.phone ?? '',
-                  line1: a.line1,
-                  line2: a.line2 ?? '',
-                  city: a.city,
-                  state: a.state ?? '',
-                  postalCode: a.postalCode ?? '',
-                }}
-                onSubmit={(v) => saveEdit(a.id, v)}
-                onCancel={() => { setEditingId(null); setAddrError(null); }}
-              />
-            </div>
-          ) : (
-            <div key={a.id} className="flex items-start justify-between gap-3 rounded-xs border p-3 text-sm">
-              <div className="min-w-0">
-                <div className="font-medium">{a.fullName} {a.isDefault && <span className="text-xs text-muted-foreground">(default)</span>}</div>
-                <div className="text-muted-foreground">{a.line1}, {a.city} {a.postalCode}</div>
-                {a.phone && <div className="text-muted-foreground">{a.phone}</div>}
+
+        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+
+        {addresses && addresses.length > 0 && (
+          <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2">
+            {addresses.map((a) => (
+              <div
+                key={a.id}
+                className="relative flex flex-col justify-between rounded-sm border border-gray-200 dark:border-gray-800 p-3.5 sm:p-4 transition-all"
+              >
+                <div className="text-xs space-y-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+                      {a.fullName}
+                    </span>
+                    {a.isDefault && (
+                      <span className="rounded-sm bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {a.line1}{a.line2 ? `, ${a.line2}` : ''}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {a.city}, {a.state} - {a.postalCode}
+                  </p>
+                  {a.phone && (
+                    <p className="text-gray-500 text-[11px] pt-0.5">
+                      Phone: <span className="font-medium text-gray-800 dark:text-gray-200">{a.phone}</span>
+                    </p>
+                  )}
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-3 border-t border-gray-100 dark:border-gray-800/80 pt-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => { setAdding(false); setEditingAddress(a); setAddrError(null); }}
+                    className="inline-flex items-center gap-1 font-bold text-[#187b7b] hover:underline"
+                  >
+                    <Edit2 className="size-3" /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(a)}
+                    disabled={del.isPending}
+                    className="inline-flex items-center gap-1 font-bold text-red-600 hover:text-red-700 hover:underline"
+                  >
+                    <Trash2 className="size-3" /> Delete
+                  </button>
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={() => { setEditingId(a.id); setAdding(false); setAddrError(null); }}>Edit</Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    if (await confirm({
-                      title: 'Remove address?',
-                      description: `"${a.fullName}, ${a.line1}" will be permanently removed.`,
-                      confirmText: 'Remove',
-                      destructive: true,
-                    })) {
-                      del.mutate(a.id, { onError: (e) => setAddrError((e as Error).message) });
-                    }
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-            </div>
-          )
-        ))}
-        {adding && (
-          <div className="rounded-xs border p-4">
-            <AddressForm onSubmit={add} submitting={create.isPending} onCancel={() => { setAdding(false); setAddrError(null); }} />
+            ))}
           </div>
+        )}
+
+        {!addresses?.length && !isLoading && (
+          <p className="text-xs text-muted-foreground">No saved addresses yet. Add one below.</p>
+        )}
+
+        {/* Edit Address Form */}
+        {editingAddress && (
+          <div className="rounded-sm border border-gray-200 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/30">
+            <div className="mb-3">
+              <h4 className="text-xs font-bold uppercase tracking-wide">Edit Address</h4>
+            </div>
+            <AddressForm
+              defaultValues={{
+                fullName: editingAddress.fullName,
+                phone: editingAddress.phone ?? '',
+                line1: editingAddress.line1,
+                line2: editingAddress.line2 ?? '',
+                city: editingAddress.city,
+                state: editingAddress.state ?? '',
+                postalCode: editingAddress.postalCode ?? '',
+              }}
+              submitLabel="Save Changes"
+              onSubmit={saveEdit}
+              submitting={update.isPending}
+              onCancel={() => { setEditingAddress(null); setAddrError(null); }}
+            />
+          </div>
+        )}
+
+        {/* Add Address Form */}
+        {adding ? (
+          <div className="rounded-sm border border-gray-200 p-4 bg-gray-50/50 dark:border-gray-800 dark:bg-gray-900/30">
+            <div className="mb-3">
+              <h4 className="text-xs font-bold uppercase tracking-wide">Add New Address</h4>
+            </div>
+            <AddressForm
+              onSubmit={add}
+              submitting={create.isPending}
+              onCancel={() => { setAdding(false); setAddrError(null); }}
+            />
+          </div>
+        ) : (
+          !editingAddress && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-bold text-xs uppercase tracking-wide"
+              onClick={() => { setEditingAddress(null); setAdding(true); setAddrError(null); }}
+            >
+              + Add New Address
+            </Button>
+          )
         )}
       </CardContent>
     </Card>

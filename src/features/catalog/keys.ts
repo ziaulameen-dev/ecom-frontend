@@ -6,6 +6,7 @@ export const catalogKeys = {
   attributes: ['attributes'] as const,
   products: (params: ProductQuery) => ['products', params] as const,
   product: (idOrSlug: string) => ['product', idOrSlug] as const,
+  frequentlyBoughtTogether: (idOrSlug: string) => ['frequentlyBoughtTogether', idOrSlug] as const,
   reviews: (productId: string) => ['reviews', productId] as const,
   hero: ['hero'] as const,
   announcement: ['announcement'] as const,

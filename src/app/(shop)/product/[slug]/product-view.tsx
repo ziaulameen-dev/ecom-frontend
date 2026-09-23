@@ -2,14 +2,20 @@
 
 import { useRouter } from 'next/navigation';
 import {
-  Check, ChevronDown, ChevronUp, Heart, Play, RotateCcw, Share2, ShoppingBag, Zap,
+  Check, ChevronDown, ChevronUp, Heart, MessageCircle, Play, RotateCcw, Share2, ShoppingBag, Zap,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RichText, fillTemplate } from '@/components/rich-text';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useProduct, useProducts, useAttributes } from '@/features/catalog';
+import {
+  useProduct,
+  useProducts,
+  useAttributes,
+  useContent,
+  FrequentlyBoughtTogether,
+} from '@/features/catalog';
 import { ProductCard } from '@/features/catalog/components/product-card';
 import { ProductRow } from '@/features/catalog/components/product-row';
 import { ReviewsSection } from '@/features/catalog/components/reviews-section';
@@ -22,6 +28,7 @@ import { useMe } from '@/features/auth';
 import { useAddToCart } from '@/features/cart';
 import { useWishlist } from '@/features/wishlist';
 import { CARD_ASPECT_CLASS, STORE_NAME } from '@/lib/config';
+import type { ListingItem, Variant } from '@/lib/types';
 import { cn, mediaSrc, money } from '@/lib/utils';
 
 export function ProductView({ slug }: { slug: string }) {
@@ -38,6 +45,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
   const router = useRouter();
   const add = useAddToCart();
   const { data: me } = useMe();
+  const { data: content } = useContent();
   const { data: allAttributes } = useAttributes();
   const sizeAttr = useMemo(() => {
     return (allAttributes ?? []).find(
@@ -146,7 +154,10 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
     if (product.category) {
       m['category'] = product.category;
     }
-    const targetVariant = active ?? product.variants?.find((v) => v.isDefault) ?? product.variants?.[0];
+    const targetVariant =
+      active ??
+      product.variants?.find((v: Variant) => v.isDefault) ??
+      product.variants?.[0];
     for (const o of targetVariant?.options ?? []) {
       m[o.type.toLowerCase()] = o.value;
       m[o.slug.toLowerCase()] = o.value;
@@ -276,13 +287,6 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                 </div>
               )}
 
-              {/* Tag Badges overlay */}
-              {product.tags.length > 0 && (
-                <div className="absolute top-4 left-4 z-10 text-[11px] font-bold tracking-wider text-gray-700 uppercase bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded-xs">
-                  {product.tags[0]}
-                </div>
-              )}
-
               {/* Mobile Top Right Wishlist Heart Button */}
               <button
                 type="button"
@@ -313,7 +317,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
           </div>
 
           {/* Desktop 2-Column Grid of Media (≥ md) */}
-          <div className="hidden md:grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="hidden md:grid grid-cols-2 gap-1.5">
             {mediaItems.map((m, i) => (
               <div
                 key={m.url + i}
@@ -344,11 +348,6 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                     sizes="(min-width: 768px) 35vw, 50vw"
                     priority={i < 2}
                   />
-                )}
-                {i === 0 && product.tags.length > 0 && (
-                  <div className="absolute top-4 left-4 z-10 text-[11px] font-bold tracking-wider text-gray-700 uppercase bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded-xs">
-                    {product.tags[0]}
-                  </div>
                 )}
               </div>
             ))}
@@ -419,7 +418,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                 disabled={!canBuy || add.isPending}
                 onClick={onAdd}
                 className={cn(
-                  'flex-1 h-12 rounded-xs border font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-all',
+                  'flex-1 h-12 rounded-sm border font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-all',
                   isAdded
                     ? 'border-[#117a7a] bg-[#117a7a]/10 text-[#117a7a]'
                     : 'border-gray-900 text-gray-900 bg-white hover:bg-gray-50',
@@ -442,7 +441,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                 type="button"
                 disabled={!canBuy || add.isPending}
                 onClick={onBuyNow}
-                className="flex-1 h-12 rounded-xs bg-primary-button hover:bg-primary-button/90 disabled:bg-gray-400 text-white font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-colors shadow-sm"
+                className="flex-1 h-12 rounded-sm bg-primary-button hover:bg-primary-button/90 disabled:bg-gray-400 text-white font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2 transition-colors shadow-sm"
               >
                 <Zap className="size-4 fill-white text-white" />
                 BUY NOW
@@ -498,7 +497,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
             <button
               type="button"
               onClick={scrollToReviews}
-              className="w-full flex items-center justify-between p-3 rounded-xs border border-gray-200 bg-gray-50/70 hover:bg-gray-100 transition-colors text-xs font-bold text-gray-900"
+              className="w-full flex items-center justify-between p-3 rounded-sm border border-gray-200 bg-gray-50/70 hover:bg-gray-100 transition-colors text-xs font-bold text-gray-900"
             >
               <div className="flex items-center gap-2">
                 <span className="text-amber-500 text-sm">★</span>
@@ -521,36 +520,56 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
                   value={pincode}
                   onChange={(e) => setPincode(e.target.value.replace(/\D/g, ''))}
                   placeholder="Enter Pincode"
-                  className="w-full h-11 px-3.5 border border-gray-300 rounded-xs text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#187b7b]"
+                  className="w-full h-11 px-3.5 border border-gray-300 rounded-sm text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#187b7b]"
                 />
               </div>
               <button
                 type="button"
                 onClick={checkPincode}
                 disabled={isCheckingPincode}
-                className="h-11 px-5 rounded-xs bg-[#187b7b] hover:bg-[#146666] text-white font-bold text-xs uppercase tracking-wider transition-colors shrink-0"
+                className="h-11 px-5 rounded-sm bg-[#187b7b] hover:bg-[#146666] text-white font-bold text-xs uppercase tracking-wider transition-colors shrink-0"
               >
                 {isCheckingPincode ? 'CHECKING...' : 'CHECK'}
               </button>
             </div>
 
             {pincodeMessage && (
-              <p className="text-xs font-medium text-[#117a7a] bg-[#117a7a]/10 border border-[#117a7a]/30 p-2.5 rounded-xs">
+              <p className="text-xs font-medium text-[#117a7a] bg-[#117a7a]/10 border border-[#117a7a]/30 p-2.5 rounded-sm">
                 {pincodeMessage}
               </p>
             )}
 
             {/* Return Policy Card */}
-            <div className="flex items-start gap-3 p-3.5 border border-gray-200 rounded-xs bg-gray-50/50">
+            <div className="flex items-start gap-3 p-3.5 border border-gray-200 rounded-sm bg-gray-50/50">
               <RotateCcw className="size-5 text-gray-700 shrink-0 mt-0.5" />
               <p className="text-xs text-gray-700 leading-relaxed font-medium">
                 This product is eligible for return or exchange under our 30-day return or exchange policy. No questions asked.
               </p>
             </div>
+
+            {/* Live Chat Inquiry */}
+            {content?.contactSupportEnabled === true && (
+              <button
+                type="button"
+                onClick={() => {
+                  window.dispatchEvent(
+                    new CustomEvent('open-support-chat', {
+                      detail: {
+                        text: `Hi! I have a question about "${fillTemplate(product.name, vars)}"${active?.sku ? ` (SKU: ${active.sku})` : ''}.`,
+                      },
+                    }),
+                  );
+                }}
+                className="flex items-center justify-center gap-2 w-full p-2.5 rounded-sm border border-dashed border-[#187b7b]/40 bg-[#187b7b]/5 hover:bg-[#187b7b]/10 text-xs font-semibold text-[#187b7b] transition-colors"
+              >
+                <MessageCircle className="size-4" />
+                <span>Have questions about this item? Chat with us live</span>
+              </button>
+            )}
           </div>
 
           {/* Product Details & Information Accordions Box */}
-          <div className="border border-gray-200 rounded-xs divide-y divide-gray-200 overflow-hidden bg-white mt-4">
+          <div className="border border-gray-200 rounded-sm divide-y divide-gray-200 overflow-hidden bg-white mt-4">
             {/* Product Details Accordion Item */}
             <div>
               <button
@@ -617,6 +636,9 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
         </div>
       </div>
 
+      {/* Frequently Bought Together Bundle Builder */}
+      <FrequentlyBoughtTogether currentProduct={product} currentVariant={active} />
+
       {/* Others Also Bought Section */}
       <SimilarProductsSection currentProductId={product.id} categoryId={product.categoryId} />
 
@@ -633,7 +655,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
             disabled={!canBuy || add.isPending}
             onClick={onAdd}
             className={cn(
-              'flex-1 h-11 rounded-xs border font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors',
+              'flex-1 h-11 rounded-sm border font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors',
               isAdded
                 ? 'border-[#117a7a] bg-[#117a7a]/10 text-[#117a7a]'
                 : 'border-gray-900 text-gray-900 bg-white',
@@ -656,7 +678,7 @@ function ProductDetailView({ product }: { product: NonNullable<ReturnType<typeof
             type="button"
             disabled={!canBuy || add.isPending}
             onClick={onBuyNow}
-            className="flex-1 h-11 rounded-xs bg-primary-button hover:bg-primary-button/90 disabled:bg-gray-400 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-sm"
+            className="flex-1 h-11 rounded-sm bg-primary-button hover:bg-primary-button/90 disabled:bg-gray-400 text-white font-bold text-xs uppercase tracking-wide flex items-center justify-center gap-1.5 transition-colors shadow-sm"
           >
             <Zap className="size-4 fill-white text-white" />
             BUY NOW
@@ -776,7 +798,7 @@ function ModalCustomVideo({ src }: { src: string }) {
 function SimilarProductsSection({ currentProductId, categoryId }: { currentProductId: string; categoryId: string | null }) {
   const { data: products, isLoading } = useProducts({ categoryId: categoryId || undefined, limit: 11 });
   const filtered = useMemo(() => {
-    return (products ?? []).filter((p) => p.productId !== currentProductId).slice(0, 10);
+    return (products ?? []).filter((p: ListingItem) => p.productId !== currentProductId).slice(0, 10);
   }, [products, currentProductId]);
 
   if (!isLoading && filtered.length === 0) return null;
@@ -857,7 +879,7 @@ function CustomQuantitySelector({
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className="h-9 px-3 border border-gray-300 rounded-xs text-xs font-semibold text-gray-800 bg-white hover:border-gray-400 focus:outline-none flex items-center gap-2 min-w-[72px] justify-between shadow-2xs"
+            className="h-9 px-3 border border-gray-300 rounded-sm text-xs font-semibold text-gray-800 bg-white hover:border-gray-400 focus:outline-none flex items-center gap-2 min-w-[72px] justify-between shadow-2xs"
           >
             <span>{value < 10 ? `0${value}` : value}</span>
             <ChevronDown className="size-3.5 text-gray-500" />
@@ -870,13 +892,13 @@ function CustomQuantitySelector({
               max={999}
               value={customVal}
               onChange={(e) => setCustomVal(e.target.value)}
-              className="h-9 w-20 px-2.5 border border-gray-300 rounded-xs text-xs font-semibold text-gray-900 bg-white focus:outline-none focus:border-gray-900"
+              className="h-9 w-20 px-2.5 border border-gray-300 rounded-sm text-xs font-semibold text-gray-900 bg-white focus:outline-none focus:border-gray-900"
               placeholder="Qty"
               autoFocus
             />
             <button
               type="submit"
-              className="h-9 px-2.5 bg-gray-900 text-white rounded-xs text-xs font-semibold hover:bg-gray-800"
+              className="h-9 px-2.5 bg-gray-900 text-white rounded-sm text-xs font-semibold hover:bg-gray-800"
             >
               Set
             </button>
@@ -894,7 +916,7 @@ function CustomQuantitySelector({
         {isOpen && !isCustomMode && (
           <>
             <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
-            <div className="absolute top-full left-0 mt-1 w-36 bg-white border border-gray-200 rounded-xs shadow-lg z-30 py-1 max-h-56 overflow-y-auto divide-y divide-gray-100">
+            <div className="absolute top-full left-0 mt-1 w-36 bg-white border border-gray-200 rounded-sm shadow-lg z-30 py-1 max-h-56 overflow-y-auto divide-y divide-gray-100">
               {standardOptions.map((n) => (
                 <button
                   key={n}

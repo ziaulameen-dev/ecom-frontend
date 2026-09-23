@@ -51,7 +51,7 @@ export function ProductCard({ item }: { item: ListingItem }) {
   }
 
   return (
-    <div className="group flex flex-col border border-gray-200 rounded-none overflow-hidden bg-white hover:shadow-md transition-shadow">
+    <div className="group flex flex-col border border-gray-200 rounded-sm overflow-hidden bg-white hover:shadow-md transition-shadow">
       <Link href={href} className={cn('relative bg-gray-100 overflow-hidden block', CARD_ASPECT_CLASS)}>
         {item.imageUrl ? (
           <Image
@@ -68,7 +68,7 @@ export function ProductCard({ item }: { item: ListingItem }) {
         )}
 
         {!item.inStock && (
-          <span className="absolute left-2 top-2 z-10 rounded-none bg-black/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+          <span className="absolute left-2 top-2 z-10 rounded-sm bg-black/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
             Sold out
           </span>
         )}
@@ -78,7 +78,7 @@ export function ProductCard({ item }: { item: ListingItem }) {
           aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
           onClick={onWish}
           className={cn(
-            'absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-none bg-white/90 shadow-2xs transition-all hover:bg-white',
+            'absolute right-2 top-2 z-10 grid size-8 place-items-center rounded-sm bg-white/90 shadow-2xs transition-all hover:bg-white',
             wished ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
           )}
         >
@@ -107,7 +107,7 @@ export function ProductCard({ item }: { item: ListingItem }) {
             aria-label="Add to cart"
             disabled={!item.inStock || add.isPending}
             onClick={onAddToCart}
-            className="size-6 xs:size-7 sm:size-8 shrink-0 grid place-items-center rounded-xs bg-gray-100/90 text-gray-700 hover:bg-gray-200 hover:text-gray-950 transition-colors duration-150 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+            className="size-6 xs:size-7 sm:size-8 shrink-0 grid place-items-center rounded-sm bg-gray-100/90 text-gray-700 hover:bg-gray-200 hover:text-gray-950 transition-colors duration-150 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
           >
             {add.isPending ? (
               <Loader2 className="size-3 xs:size-3.5 animate-spin text-gray-500" />

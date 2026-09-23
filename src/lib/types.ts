@@ -54,10 +54,13 @@ export interface SocialLink {
   url: string;
 }
 
-/** Store-wide editable content: FAQ + footer social links. */
+/** Store-wide editable content: FAQ + footer social links + store settings. */
 export interface SiteContent {
   faqs: FaqItem[];
   socials: SocialLink[];
+  codEnabled?: boolean;
+  contactSupportEnabled?: boolean;
+  chatAttachmentsEnabled?: boolean;
 }
 
 /** A newsletter subscriber (admin view). */
@@ -153,6 +156,8 @@ export interface ProductDetail {
   categoryId: string | null;
   category: string | null;
   active: boolean;
+  fulfillmentMethod?: 'automatic' | 'manual';
+  lowStockThreshold?: number;
   currency: string;
   basePriceMinor: number;
   offerPriceMinor: number | null;
@@ -248,8 +253,8 @@ export interface Address {
 }
 
 export type OrderStatus =
-  | 'pending' | 'processing' | 'paid' | 'failed'
-  | 'fulfilled' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+  | 'pending' | 'confirmed' | 'processing' | 'failed'
+  | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
 
 export interface OrderItem {
   productId: string;
@@ -287,6 +292,8 @@ export interface AdminProduct {
   category: string | null;
   categoryId: string | null;
   active: boolean;
+  fulfillmentMethod?: 'automatic' | 'manual';
+  lowStockThreshold?: number;
   stock: number;
   priceMinor: number;
   offerPriceMinor: number | null;
@@ -319,6 +326,7 @@ export interface AdminReturn {
   images: string[];
   refundMinor: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 /** Snapshot of the shipping address captured at order time. */
@@ -333,7 +341,67 @@ export interface ShippingAddress {
   country: string;
 }
 
+/** Shiprocket shipment data linked to an order. */
+export interface ShiprocketOrderData {
+  orderId: string;
+  shiprocketOrderId: number | null;
+  shipmentId: number | null;
+  awb: string | null;
+  courierId: number | null;
+  courierName: string | null;
+  pickupScheduledDate: string | null;
+  labelUrl: string | null;
+  srStatus: string | null;
+  pickupCode: string | null;
+}
+
+/** A courier option returned by the serviceability/rates endpoint. */
+export interface ShiprocketCourier {
+  id: number;
+  name: string;
+  etd: string;
+  etd_hours: number;
+  rate: number;
+  cod: number;
+  is_surface: boolean;
+  pickup_performance: number;
+}
+
+export interface AdminOrdersQuery {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  paymentMethod?: string;
+  sortBy?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface AdminOrdersMetrics {
+  totalRevenueMinor: number;
+  totalOrders: number;
+  toShipCount: number;
+  codCount: number;
+  onlineCount: number;
+  deliveredCount: number;
+  deliveryRate: number;
+  aovMinor: number;
+  activeReturnsCount: number;
+}
+
+export interface AdminOrdersResponse {
+  items: AdminOrder[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  metrics: AdminOrdersMetrics;
+  counts: Record<string, number>;
+}
+
 export interface AdminOrder extends Order {
+  userId?: string;
   customerEmail: string | null;
   carrier: string | null;
   trackingNumber: string | null;
@@ -341,6 +409,8 @@ export interface AdminOrder extends Order {
   cancelReason: string | null;
   paymentRef: string | null;
   shippingAddress: ShippingAddress;
+  shiprocket?: ShiprocketOrderData | null;
+  returns?: AdminReturn[];
 }
 
 export interface Order {
@@ -354,9 +424,14 @@ export interface Order {
   taxMinor: number;
   totalMinor: number;
   couponCode: string | null;
+  paymentMethod?: 'prepaid' | 'cod';
   shippingAddress?: ShippingAddress | null;
+  carrier?: string | null;
+  trackingNumber?: string | null;
+  cancelReason?: string | null;
   items: OrderItem[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface ShippingTier {

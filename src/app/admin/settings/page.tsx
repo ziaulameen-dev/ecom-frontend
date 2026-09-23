@@ -1,6 +1,6 @@
 'use client';
 
-import { GripVertical, Pencil, Plus, Sparkles, Trash2, Truck } from 'lucide-react';
+import { CreditCard, GripVertical, Headphones, Pencil, Plus, Sparkles, Trash2, Truck } from 'lucide-react';
 import Image from 'next/image';
 import { Suspense, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -25,6 +25,7 @@ import {
   useShippingRate,
   useSubscribers,
   useUploadProductImage,
+  ShiprocketSettingsCard,
 } from '@/features/admin';
 import {
   useAnnouncement,
@@ -47,6 +48,9 @@ const toRupees = (paise: number) => (paise / 100).toFixed(2);
 
 const TABS = [
   { id: 'shipping', label: 'Shipping' },
+  { id: 'shiprocket', label: 'Shiprocket Logistics' },
+  { id: 'payments', label: 'Payment Options' },
+  { id: 'support', label: 'Contact Support' },
   { id: 'hero', label: 'Homepage hero' },
   { id: 'announcement', label: 'Announcement' },
   { id: 'faq', label: 'FAQ' },
@@ -91,6 +95,9 @@ function SettingsContent() {
       </div>
 
       {activeTab === 'shipping' && <ShippingCard />}
+      {activeTab === 'shiprocket' && <ShiprocketSettingsCard />}
+      {activeTab === 'payments' && <PaymentSettingsCard />}
+      {activeTab === 'support' && <ContactSupportSettingsCard />}
       {activeTab === 'hero' && <HeroManager />}
       {activeTab === 'announcement' && <AnnouncementCard />}
       {activeTab === 'faq' && <FaqCard />}
@@ -269,7 +276,7 @@ function ShippingCard() {
                 return (
                   <div
                     key={idx}
-                    className="flex flex-col sm:grid sm:grid-cols-[1fr_1fr_1fr_40px] gap-2.5 sm:gap-3 p-3 sm:p-2.5 rounded-xs border bg-card items-center"
+                    className="flex flex-col sm:grid sm:grid-cols-[1fr_1fr_1fr_40px] gap-2.5 sm:gap-3 p-3 sm:p-2.5 rounded-sm border bg-card items-center"
                   >
                     <div className="w-full">
                       <Label className="sm:hidden text-[11px] text-muted-foreground mb-1 block">
@@ -362,7 +369,7 @@ function ShippingCard() {
             </Button>
 
             {/* Live Customer Preview */}
-            <div className="rounded-xs border border-[#117a7a]/20 bg-[#117a7a]/5 p-3.5 space-y-2 text-xs">
+            <div className="rounded-sm border border-[#117a7a]/20 bg-[#117a7a]/5 p-3.5 space-y-2 text-xs">
               <p className="font-bold text-[#117a7a] flex items-center gap-1.5">
                 <Truck className="size-3.5" />
                 Customer Checkout Preview:
@@ -512,7 +519,7 @@ function HeroManager() {
                 onDragStart={() => (dragIndex.current = i)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => onDrop(i)}
-                className="flex items-center gap-3 rounded-xs border bg-card p-2"
+                className="flex items-center gap-3 rounded-sm border bg-card p-2"
               >
                 <GripVertical className="size-4 shrink-0 cursor-grab text-muted-foreground" />
                 <div className="relative h-12 w-20 shrink-0 overflow-hidden rounded bg-muted">
@@ -738,7 +745,7 @@ function BannerDialog({
 
   return (
     <Drawer open onOpenChange={(o) => !o && onClose()}>
-      <DrawerContent className="md:max-w-2xl">
+      <DrawerContent className="md:max-w-2xl md:p-6">
         <DrawerHeader>
           <DrawerTitle>{initial ? 'Edit hero collection' : 'Add hero collection'}</DrawerTitle>
         </DrawerHeader>
@@ -747,7 +754,7 @@ function BannerDialog({
           <div>
             <Label className="text-xs font-semibold">Desktop Background Preview</Label>
             <div
-              className="relative w-full mt-1.5 overflow-hidden rounded-xs border bg-muted"
+              className="relative w-full mt-1.5 overflow-hidden rounded-sm border bg-muted"
               style={{ aspectRatio: `${aspectWidth} / ${aspectHeight}` }}
             >
               {preview ? (
@@ -836,7 +843,7 @@ function BannerDialog({
                     <Checkbox
                       checked={checked}
                       onCheckedChange={() => toggleProduct(item.id)}
-                      className="rounded-xs"
+                      className="rounded-sm"
                     />
                     <div className="relative size-10 shrink-0 overflow-hidden rounded bg-muted border">
                       {item.imageUrl && (
@@ -916,7 +923,7 @@ function AnnouncementCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none">
-          <Checkbox checked={active} onCheckedChange={setActive} className="rounded-xs" />
+          <Checkbox checked={active} onCheckedChange={setActive} className="rounded-sm" />
           <span>Show the announcement bar</span>
         </label>
 
@@ -975,7 +982,7 @@ function FaqCard() {
         {faqs.length === 0 && <p className="text-sm text-muted-foreground">No questions yet — add one below.</p>}
 
         {faqs.map((f, i) => (
-          <div key={i} className="space-y-2 rounded-xs border p-3">
+          <div key={i} className="space-y-2 rounded-sm border p-3">
             <div className="flex items-center gap-2">
               <Input value={f.question} onChange={(e) => setAt(i, { question: e.target.value })} placeholder="Question" />
               <Button
@@ -1187,3 +1194,249 @@ function AnnounceProduct({ disabled }: { disabled?: boolean }) {
     </div>
   );
 }
+
+/* --------------------------------------------------------------------- Payments */
+
+function PaymentSettingsCard() {
+  const { data: content, isLoading } = useContent();
+  const save = useSetContent();
+  const [codEnabled, setCodEnabled] = useState(false);
+  const [synced, setSynced] = useState(false);
+
+  if (content && !synced) {
+    setSynced(true);
+    setCodEnabled(Boolean(content.codEnabled));
+  }
+
+  function submit() {
+    save.mutate(
+      { codEnabled },
+      {
+        onSuccess: () => toast.success('Payment settings updated successfully'),
+        onError: (e) => toast.error((e as Error).message),
+      },
+    );
+  }
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader className="border-b pb-4">
+        <CardTitle className="text-base flex items-center gap-2">
+          <CreditCard className="size-4 text-primary-button" />
+          Payment Options
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Manage accepted payment methods across your storefront.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-6">
+        {isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <div className="space-y-4">
+            {/* Online Payment Card (Always active) */}
+            <div className="flex items-start justify-between p-4 rounded-sm border bg-card">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm">Online Payments (Cashfree)</span>
+                  <span className="rounded-sm bg-emerald-500/15 text-emerald-600 px-1.5 py-0.2 text-[10px] font-bold">
+                    ACTIVE
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground max-w-md">
+                  UPI, Debit/Credit Cards, NetBanking, and Wallets via Cashfree payment gateway.
+                </p>
+              </div>
+            </div>
+
+            {/* Cash on Delivery Toggle */}
+            <div className="p-4 sm:p-5 rounded-sm border bg-card space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="font-bold text-sm text-foreground">Cash on Delivery (COD)</span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase shrink-0',
+                      codEnabled
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        : 'bg-muted text-muted-foreground border border-border/60',
+                    )}
+                  >
+                    {codEnabled ? 'ENABLED' : 'DISABLED'}
+                  </span>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer select-none shrink-0" aria-label="Toggle Cash on Delivery">
+                  <input
+                    type="checkbox"
+                    checked={codEnabled}
+                    onChange={(e) => setCodEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#117a7a]"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Allow customers to place orders without immediate digital payment and pay in cash when the order arrives.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                onClick={submit}
+                disabled={save.isPending || isLoading}
+                className="w-full sm:w-auto font-bold text-xs uppercase tracking-wider"
+              >
+                {save.isPending ? 'Saving…' : 'Save Payment Settings'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ----------------------------------------------------------- Contact Support */
+
+function ContactSupportSettingsCard() {
+  const { data: content, isLoading } = useContent();
+  const save = useSetContent();
+  const [enabled, setEnabled] = useState(true);
+  const [savedValue, setSavedValue] = useState<boolean | null>(null);
+  const [attachmentsEnabled, setAttachmentsEnabled] = useState(true);
+  const [savedAttachmentsValue, setSavedAttachmentsValue] = useState<boolean | null>(null);
+  const [synced, setSynced] = useState(false);
+
+  if (content && !synced) {
+    setSynced(true);
+    const initialSupport = content.contactSupportEnabled !== false;
+    const initialAttach = content.chatAttachmentsEnabled !== false;
+    setEnabled(initialSupport);
+    setSavedValue(initialSupport);
+    setAttachmentsEnabled(initialAttach);
+    setSavedAttachmentsValue(initialAttach);
+  }
+
+  const currentSavedSupport = savedValue ?? (content ? content.contactSupportEnabled !== false : true);
+  const currentSavedAttach = savedAttachmentsValue ?? (content ? content.chatAttachmentsEnabled !== false : true);
+  const hasChanged = synced && (enabled !== currentSavedSupport || attachmentsEnabled !== currentSavedAttach);
+
+  function submit() {
+    save.mutate(
+      {
+        contactSupportEnabled: enabled,
+        chatAttachmentsEnabled: attachmentsEnabled,
+      },
+      {
+        onSuccess: () => {
+          setSavedValue(enabled);
+          setSavedAttachmentsValue(attachmentsEnabled);
+          toast.success('Support and chat settings updated');
+        },
+        onError: (e) => toast.error((e as Error).message),
+      },
+    );
+  }
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader className="border-b pb-4">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Headphones className="size-4 text-[#187b7b]" />
+          Contact Support & Live Chat
+        </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Manage storefront customer support availability, live chat visibility, and attachment permissions.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6 pt-6">
+        {isLoading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : (
+          <div className="space-y-4">
+            {/* Storefront Contact Support Toggle */}
+            <div className="p-4 sm:p-5 rounded-sm border bg-card space-y-3">
+              {/* Header row: Title + Status Badge on left, Toggle Switch on right */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="font-bold text-sm text-foreground">Storefront Contact Support</span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase shrink-0',
+                      enabled
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        : 'bg-muted text-muted-foreground border border-border/60',
+                    )}
+                  >
+                    {enabled ? 'ACTIVE' : 'REMOVED / DISABLED'}
+                  </span>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer select-none shrink-0" aria-label="Toggle Storefront Contact Support">
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(e) => setEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#187b7b]"></div>
+                </label>
+              </div>
+
+              {/* Description */}
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When enabled, customers see the floating live chat widget and greeting bubble in the bottom right corner of the storefront. When disabled, the contact support widget is completely removed and hidden from all customer pages.
+              </p>
+            </div>
+
+            {/* Customer Media Attachments Toggle */}
+            <div className="p-4 sm:p-5 rounded-sm border bg-card space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="font-bold text-sm text-foreground">Customer Media Attachments</span>
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold tracking-wide uppercase shrink-0',
+                      attachmentsEnabled
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        : 'bg-muted text-muted-foreground border border-border/60',
+                    )}
+                  >
+                    {attachmentsEnabled ? 'ENABLED' : 'DISABLED'}
+                  </span>
+                </div>
+
+                <label className="relative inline-flex items-center cursor-pointer select-none shrink-0" aria-label="Toggle Customer Media Attachments">
+                  <input
+                    type="checkbox"
+                    checked={attachmentsEnabled}
+                    onChange={(e) => setAttachmentsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#187b7b]"></div>
+                </label>
+              </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When enabled, customers can attach photos and videos in storefront customer support chats. When disabled, customers cannot add attachments on the storefront. Administrators can always send attachments in admin messages.
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                onClick={submit}
+                disabled={save.isPending || isLoading || !hasChanged}
+                className="w-full sm:w-auto font-bold text-xs uppercase tracking-wider bg-[#187b7b] hover:bg-[#136363] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {save.isPending ? 'Saving…' : 'Save Support Settings'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+

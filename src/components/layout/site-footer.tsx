@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { subscribeNewsletter, useContent } from '@/features/catalog';
 import { STORE_NAME } from '@/lib/config';
+import { cn } from '@/lib/utils';
 
 const SHOP: [string, string][] = [
   ['New arrivals', '/shop?sort=new'],
@@ -19,6 +21,9 @@ const HELP: [string, string][] = [
   ['Contact us', '/faq'],
 ];
 export function SiteFooter() {
+  const pathname = usePathname();
+  const hideOnMobile = pathname?.startsWith('/cart') || pathname?.startsWith('/checkout');
+
   const { data: content } = useContent();
   // Only show socials an admin actually configured (with a real URL).
   const socials = (content?.socials ?? []).filter((s) => s.url && s.url !== '#');
@@ -45,7 +50,7 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="mt-8 md:mt-20">
+    <footer className={cn('mt-8 md:mt-20', hideOnMobile && 'hidden lg:block')}>
       <div className="mx-auto max-w-[1500px] border-t px-3 sm:px-6 lg:px-8 py-12 pb-20 md:pb-12">
         <div className="flex flex-col justify-between gap-10 md:flex-row">
           {/* Newsletter */}

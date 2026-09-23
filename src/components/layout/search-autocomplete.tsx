@@ -80,7 +80,7 @@ export function SearchAutocomplete({
   return (
     <div
       className={cn(
-        'z-50 overflow-y-auto rounded-xs border border-neutral-200 dark:border-neutral-800 bg-background/98 backdrop-blur-md shadow-2xl transition-all duration-200 animate-in fade-in',
+        'z-50 overflow-y-auto rounded-sm border border-neutral-200 dark:border-neutral-800 bg-background/98 backdrop-blur-md shadow-2xl transition-all duration-200 animate-in fade-in',
         isMobile
           ? 'absolute left-0 right-0 top-full mt-1 max-h-[70vh] w-full'
           : 'absolute left-0 top-full mt-1.5 w-[360px] lg:w-[420px] max-h-[480px] zoom-in-95',
@@ -102,7 +102,7 @@ export function SearchAutocomplete({
                   key={c.id}
                   type="button"
                   onClick={() => handleNavigate(`/shop?category=${c.slug}`)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xs bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-medium transition-colors"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-medium transition-colors"
                 >
                   <Tag className="size-3 text-neutral-400" />
                   {c.name}
@@ -111,7 +111,7 @@ export function SearchAutocomplete({
               <button
                 type="button"
                 onClick={() => handleNavigate('/shop?sort=best')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xs bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-medium transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-medium transition-colors"
               >
                 <Flame className="size-3 text-orange-500" />
                 Best Sellers
@@ -119,7 +119,7 @@ export function SearchAutocomplete({
               <button
                 type="button"
                 onClick={() => handleNavigate('/shop?sort=new')}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xs bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-medium transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-sm bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-[11px] font-medium transition-colors"
               >
                 New Arrivals
               </button>
@@ -145,7 +145,7 @@ export function SearchAutocomplete({
                     key={`cat-${i}`}
                     type="button"
                     onClick={() => handleNavigate(`/shop?category=${c.slug}`)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xs text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-sm text-left text-xs font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                   >
                     <div className="flex items-center gap-2">
                       <Layers className="size-3.5 text-neutral-400 shrink-0" />
@@ -168,7 +168,7 @@ export function SearchAutocomplete({
             <div className="p-3 space-y-2.5">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-3 animate-pulse">
-                  <div className="size-10 bg-neutral-200 dark:bg-neutral-800 rounded-xs shrink-0" />
+                  <div className="size-10 bg-neutral-200 dark:bg-neutral-800 rounded-sm shrink-0" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3 w-3/4 bg-neutral-200 dark:bg-neutral-800 rounded" />
                     <div className="h-2.5 w-1/3 bg-neutral-200 dark:bg-neutral-800 rounded" />
@@ -194,10 +194,10 @@ export function SearchAutocomplete({
                       key={p.key || p.productId}
                       type="button"
                       onClick={() => handleNavigate(href)}
-                      className="w-full flex items-center gap-3 p-2 rounded-xs text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/80 transition-colors group"
+                      className="w-full flex items-center gap-3 p-2 rounded-sm text-left hover:bg-neutral-100 dark:hover:bg-neutral-800/80 transition-colors group"
                     >
                       {/* Product Thumbnail */}
-                      <div className="relative size-11 shrink-0 overflow-hidden rounded-xs bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700/50">
+                      <div className="relative size-11 shrink-0 overflow-hidden rounded-sm bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700/50">
                         {p.imageUrl ? (
                           <Image
                             src={mediaSrc(p.imageUrl)}
@@ -265,7 +265,7 @@ export function SearchAutocomplete({
             <button
               type="button"
               onClick={() => handleNavigate(`/shop?search=${encodeURIComponent(debouncedQuery)}`)}
-              className="w-full py-2.5 px-3 rounded-xs flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
+              className="w-full py-2.5 px-3 rounded-sm flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-neutral-900 dark:text-neutral-100 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
             >
               <span>View all results for &ldquo;{debouncedQuery}&rdquo;</span>
               <ArrowRight className="size-3.5" />

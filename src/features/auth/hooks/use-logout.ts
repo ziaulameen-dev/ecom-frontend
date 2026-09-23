@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { cartKeys } from '@/features/cart/keys';
+import { disconnectChatSocket } from '@/features/chat/services/chat-socket';
 import { cartId } from '@/lib/session';
 import { authKeys } from '../keys';
 import { logout } from '../services/auth.service';
@@ -13,10 +13,14 @@ export function useLogout() {
     mutationFn: async () => {
       await logout().catch(() => {});
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       cartId.clear();
+      disconnectChatSocket();
       qc.setQueryData(authKeys.me, null);
-      qc.invalidateQueries({ queryKey: cartKeys.cart });
+      await qc.invalidateQueries({ queryKey: authKeys.me, refetchType: 'all' });
+      await qc.invalidateQueries({ queryKey: ['chat'] });
+      await qc.invalidateQueries({ queryKey: ['cart'] });
+      await qc.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }

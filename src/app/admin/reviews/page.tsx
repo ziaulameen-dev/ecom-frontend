@@ -134,7 +134,7 @@ function ReviewRow({ review, productName }: { review: Review; productName: strin
             {review.images?.length > 0 && (
               <div className="mt-1.5 flex gap-1">
                 {review.images.slice(0, 4).map((url) => (
-                  <div key={url} className="relative size-8 overflow-hidden rounded-xs border">
+                  <div key={url} className="relative size-8 overflow-hidden rounded-sm border">
                     <Image src={mediaSrc(url)} alt="" fill sizes="32px" className="object-cover" />
                   </div>
                 ))}
@@ -320,7 +320,7 @@ function ReviewDialog({
             <Label>Photos <span className="text-muted-foreground">(optional, up to 8)</span></Label>
             <div className="flex flex-wrap gap-2">
               {f.images.map((url) => (
-                <div key={url} className="relative size-16 overflow-hidden rounded-xs border">
+                <div key={url} className="relative size-16 overflow-hidden rounded-sm border">
                   <Image src={mediaSrc(url)} alt="Review photo" fill sizes="64px" className="object-cover" />
                   <button
                     type="button"
@@ -333,7 +333,7 @@ function ReviewDialog({
                 </div>
               ))}
               {f.images.length < 8 && (
-                <label className="flex size-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-xs border border-dashed text-muted-foreground transition hover:border-foreground/40 hover:text-foreground">
+                <label className="flex size-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-dashed text-muted-foreground transition hover:border-foreground/40 hover:text-foreground">
                   <ImagePlus className="size-4" />
                   <input
                     type="file"

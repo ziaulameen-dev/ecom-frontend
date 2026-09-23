@@ -128,7 +128,7 @@ export function VariantPicker({
                     type="button"
                     onClick={() => onChange({ ...selection, [g.typeId]: val.value })}
                     className={cn(
-                      'h-9 min-w-[42px] px-2.5 rounded-xs border text-xs font-semibold transition-all flex items-center justify-center',
+                      'h-9 min-w-[42px] px-2.5 rounded-sm border text-xs font-semibold transition-all flex items-center justify-center',
                       selected
                         ? 'border-gray-900 bg-gray-900 text-white shadow-xs'
                         : 'border-gray-300 bg-white text-gray-800 hover:border-gray-400'
