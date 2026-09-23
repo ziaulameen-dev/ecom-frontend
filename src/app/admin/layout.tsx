@@ -15,18 +15,45 @@ import { playIncomingChime } from '@/features/chat/utils/chat-sound';
 import { sseUrl } from '@/lib/api-client';
 import { cn, mediaSrc } from '@/lib/utils';
 
-const NAV = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-  { href: '/admin/returns', label: 'Returns', icon: Undo2 },
-  { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
-  { href: '/admin/products', label: 'Products', icon: PackageSearch },
-  { href: '/admin/categories', label: 'Categories', icon: ListTree },
-  { href: '/admin/attributes', label: 'Attributes', icon: Boxes },
-  { href: '/admin/coupons', label: 'Coupons', icon: BadgePercent },
-  { href: '/admin/reviews', label: 'Reviews', icon: Star },
-  { href: '/admin/customers', label: 'Customers', icon: Users },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: any;
+  exact?: boolean;
+}
+
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Operations',
+    items: [
+      { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+      { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
+      { href: '/admin/returns', label: 'Returns', icon: Undo2 },
+      { href: '/admin/messages', label: 'Messages', icon: MessageSquare },
+    ],
+  },
+  {
+    title: 'Store & Catalog',
+    items: [
+      { href: '/admin/products', label: 'Products', icon: PackageSearch },
+      { href: '/admin/categories', label: 'Categories', icon: ListTree },
+      { href: '/admin/attributes', label: 'Attributes', icon: Boxes },
+      { href: '/admin/coupons', label: 'Coupons', icon: BadgePercent },
+      { href: '/admin/reviews', label: 'Reviews', icon: Star },
+    ],
+  },
+  {
+    title: 'Management',
+    items: [
+      { href: '/admin/customers', label: 'Customers', icon: Users },
+      { href: '/admin/settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ];
 
 interface AdminChatToastState {
@@ -281,64 +308,87 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Nav items */}
-      <nav className={cn('flex-1 space-y-1 py-2 overflow-visible', collapsed ? 'flex flex-col items-center px-0' : 'px-2')}>
-        {NAV.map((item) => {
-          const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
-          const showUnread = item.href === '/admin/messages' && unreadChatCount > 0 && !isMessagesPage;
+      <nav className={cn('flex-1 space-y-4 py-2 overflow-y-auto overflow-x-hidden scrollbar-none', collapsed ? 'px-0' : 'px-2')}>
+        {NAV_SECTIONS.map((section, sIdx) => (
+          <div key={section.title || sIdx} className="space-y-1">
+            {/* Category header when expanded */}
+            {!collapsed && (
+              <p className="px-3 pt-1 pb-1 text-[10px] font-bold tracking-wider text-muted-foreground/70 uppercase select-none">
+                {section.title}
+              </p>
+            )}
 
-          return (
-            <div key={item.href} className={cn('relative group', collapsed && 'flex justify-center w-full')}>
-              <Link
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className={cn(
-                  'flex h-10 items-center rounded-md text-sm transition-colors relative overflow-hidden',
-                  active
-                    ? 'bg-foreground text-background'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                  collapsed ? 'size-10 justify-center p-0' : 'w-full px-3 gap-3',
-                )}
-              >
-                {/* Icon box: centered with unread badge */}
-                <div className="relative flex items-center justify-center shrink-0">
-                  <item.icon className="size-4" />
-                  {showUnread && collapsed && (
-                    <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white shadow-xs animate-in zoom-in-50">
-                      {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                    </span>
-                  )}
-                </div>
+            {/* Subtle separator when collapsed */}
+            {collapsed && sIdx > 0 && (
+              <div className="h-px w-6 bg-border/60 my-2 mx-auto" />
+            )}
 
-                {/* Text label: hidden when collapsed */}
-                {!collapsed && (
-                  <span className="truncate whitespace-nowrap transition-all duration-300 ease-in-out flex-1">
-                    {item.label}
-                  </span>
-                )}
+            <div className={cn('space-y-0.5', collapsed && 'flex flex-col items-center')}>
+              {section.items.map((item) => {
+                const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
+                const showUnread = item.href === '/admin/messages' && unreadChatCount > 0 && !isMessagesPage;
 
-                {/* Unread badge when expanded: docks on right side */}
-                {showUnread && !collapsed && (
-                  <span className="ml-auto mr-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-bold text-white shadow-xs animate-in zoom-in-50">
-                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
-                  </span>
-                )}
-              </Link>
+                return (
+                  <div key={item.href} className={cn('relative group', collapsed && 'flex justify-center w-full')}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        'flex h-9.5 items-center rounded-lg text-sm transition-all relative overflow-hidden',
+                        active
+                          ? 'bg-[#187b7b] text-white font-semibold shadow-xs'
+                          : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                        collapsed ? 'size-9.5 justify-center p-0' : 'w-full px-3 gap-3',
+                      )}
+                    >
+                      {/* Icon box: centered with unread badge */}
+                      <div className="relative flex items-center justify-center shrink-0">
+                        <item.icon className={cn('size-4', active ? 'text-white stroke-[2.2]' : '')} />
+                        {showUnread && collapsed && (
+                          <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-bold text-white shadow-xs animate-in zoom-in-50">
+                            {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                          </span>
+                        )}
+                      </div>
 
-              {/* Tooltip — only in collapsed mode, appears after 1s hover */}
-              {collapsed && (
-                <div
-                  role="tooltip"
-                  className="sidebar-tooltip absolute left-full top-1/2 z-50 ml-1.5
-                             rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap"
-                >
-                  {item.label}
-                  {/* Clean white arrow pointing left */}
-                  <span className="absolute -left-1 top-1/2 -translate-y-1/2 h-2 w-2 rotate-45 bg-white dark:bg-zinc-900 border-l border-b border-black/[0.08] dark:border-white/[0.12]" />
-                </div>
-              )}
+                      {/* Text label: hidden when collapsed */}
+                      {!collapsed && (
+                        <span className="truncate whitespace-nowrap transition-all duration-300 ease-in-out flex-1">
+                          {item.label}
+                        </span>
+                      )}
+
+                      {/* Unread badge when expanded: docks on right side */}
+                      {showUnread && !collapsed && (
+                        <span
+                          className={cn(
+                            'ml-auto mr-0.5 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold shadow-xs animate-in zoom-in-50',
+                            active ? 'bg-white text-[#187b7b]' : 'bg-rose-600 text-white',
+                          )}
+                        >
+                          {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                        </span>
+                      )}
+                    </Link>
+
+                    {/* Tooltip — only in collapsed mode, appears after 1s hover */}
+                    {collapsed && (
+                      <div
+                        role="tooltip"
+                        className="sidebar-tooltip absolute left-full top-1/2 z-50 ml-2
+                                   rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap"
+                      >
+                        {item.label}
+                        {/* Clean white arrow pointing left */}
+                        <span className="absolute -left-1 top-1/2 -translate-y-1/2 h-2 w-2 rotate-45 bg-white dark:bg-zinc-900 border-l border-b border-black/[0.08] dark:border-white/[0.12]" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </nav>
 
       {/* Footer: back to store */}
@@ -347,13 +397,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link
             href="/"
             className={cn(
-              'flex h-10 items-center rounded-md text-sm text-muted-foreground hover:text-foreground transition-colors overflow-hidden',
-              collapsed ? 'size-10 justify-center p-0' : 'w-full px-3 gap-3',
+              'flex h-9.5 items-center rounded-lg text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors overflow-hidden',
+              collapsed ? 'size-9.5 justify-center p-0' : 'w-full px-3 gap-3',
             )}
           >
             <Home className="size-4 shrink-0" />
             {!collapsed && (
-              <span className="truncate whitespace-nowrap transition-all duration-300 ease-in-out flex-1">
+              <span className="truncate whitespace-nowrap transition-all duration-300 ease-in-out flex-1 font-medium">
                 Back to store
               </span>
             )}
@@ -361,7 +411,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {collapsed && (
             <div
               role="tooltip"
-              className="sidebar-tooltip absolute left-full top-1/2 z-50 ml-1.5
+              className="sidebar-tooltip absolute left-full top-1/2 z-50 ml-2
                          rounded-md px-3 py-1.5 text-xs font-semibold whitespace-nowrap"
             >
               Back to store
